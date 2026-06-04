@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>일차함수 그래프 학습 활동</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FBF7EE; --ink:#2C2A25; --muted:#7C7768;
+    --card:#FFFFFF; --border:#E8E1D0; --line:#EDE6D6;
+    --given:#3E7BD6; --new:#16467E; --primary:#2F6BFF; --primary-d:#1E4FCC; --primary-soft:#E9F0FF;
+    --purple:#7C5CFC; --amber:#E8920C; --green:#1BA56B; --stamp:#E24B4A; --warn:#D9772A;
+    --r:14px; --r-lg:20px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Gowun Dodum','Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:var(--ink);
+    background:
+      linear-gradient(var(--line) 1px,transparent 1px) 0 0/26px 26px,
+      linear-gradient(90deg,var(--line) 1px,transparent 1px) 0 0/26px 26px, var(--paper);
+    -webkit-font-smoothing:antialiased;padding:20px;
+  }
+  .wrap{max-width:1060px;margin:0 auto}
+  header{text-align:center;margin-bottom:18px}
+  .badge{display:inline-flex;align-items:center;gap:7px;background:var(--primary-soft);color:var(--primary-d);
+    font-size:13px;padding:5px 14px;border-radius:999px;margin-bottom:10px}
+  .badge svg{width:15px;height:15px}
+  h1{font-family:'Jua',sans-serif;font-size:30px;font-weight:400;letter-spacing:-.5px;line-height:1.2}
+  h1 .hl{color:var(--primary)}
+  header p{color:var(--muted);font-size:15px;margin-top:6px}
+
+  /* 활동 카드 */
+  .activity{background:var(--card);border:1.5px solid var(--border);border-radius:var(--r-lg);
+    padding:22px;box-shadow:0 10px 30px -18px rgba(60,50,20,.35);margin-bottom:24px}
+  .act-head{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;padding:5px 12px;border-radius:999px;
+    font-family:'Jua',sans-serif;letter-spacing:.2px}
+  .pill.open{background:#FFF3DD;color:#A86A0F}
+  .pill.think{background:#E7F7EE;color:#137A4F}
+  .act-title{font-family:'Jua',sans-serif;font-size:22px;color:var(--ink);font-weight:400}
+  .act-lead{font-size:14px;color:var(--muted);line-height:1.65;margin:8px 0 4px}
+  .eq-now{font-family:'Jua',sans-serif;font-size:22px;color:var(--new);
+    background:#EAF1FF;border:1.5px solid #C8DAF3;display:inline-block;padding:6px 16px;border-radius:10px;
+    margin-top:10px;white-space:nowrap;letter-spacing:.3px}
+
+  /* 교사 컨트롤 바 */
+  .teacher-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px;padding:10px 12px;
+    background:#FFF8E8;border:1.5px dashed #ECD8A0;border-radius:12px}
+  .teacher-bar .t-lead{font-size:12.5px;color:#9A7A2B;font-family:'Jua',sans-serif;letter-spacing:.2px;margin-left:auto}
+  .teacher-bar label{font-size:13px;color:var(--ink);display:flex;align-items:center;gap:5px}
+  .teacher-bar select{font-family:inherit;font-size:14px;padding:5px 8px;border-radius:8px;
+    border:1.5px solid var(--border);background:#fff;color:var(--ink);cursor:pointer;min-width:54px}
+  .teacher-bar .t-mini{padding:6px 11px;font-size:13px;border-radius:9px}
+  .teacher-bar .eq-now{margin-top:0;font-size:18px;padding:5px 14px}
+  @media(max-width:720px){.teacher-bar .t-lead{margin-left:0}.teacher-bar .eq-now{width:100%;text-align:center}}
+
+  .layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,440px);gap:22px;align-items:start;margin-top:18px}
+  .work-area{min-width:0}
+  .canvas-area{display:flex;flex-direction:column;align-items:center;gap:10px}
+  canvas{width:100%;max-width:420px;height:auto;display:block;border-radius:12px;background:#fff;
+    border:1.5px solid var(--border);box-shadow:0 6px 18px -14px rgba(60,50,20,.4);
+    touch-action:none;-webkit-user-select:none;user-select:none;cursor:pointer}
+  .canvas-guide{font-size:12.5px;color:var(--muted);text-align:center;line-height:1.55;
+    background:#FBF7EE;border:1.5px dashed #E5DEC8;border-radius:10px;padding:8px 12px;width:100%;max-width:420px}
+  .canvas-guide.ready{background:var(--primary-soft);border:1.5px solid #B9CFEE;border-style:solid;color:var(--primary-d)}
+  .canvas-guide.done{background:#E7F7EE;border:1.5px solid #9FD8BB;border-style:solid;color:#137A4F}
+  .canvas-guide b{font-family:'Jua',sans-serif;color:inherit}
+
+  /* 표 */
+  .table-wrap{position:relative;overflow:visible}
+  table{width:100%;border-collapse:separate;border-spacing:5px;table-layout:fixed}
+  th,td{padding:0;text-align:center}
+  th{font-family:'Jua',sans-serif;font-size:14px;color:var(--ink);background:#F4EEE0;border-radius:8px;padding:8px 0}
+  .xv{font-family:'Jua',sans-serif;font-size:16px;color:var(--ink);background:#F4EEE0;border-radius:8px;padding:8px 0}
+  .gv{font-family:'Jua',sans-serif;font-size:15px;color:#137A4F;background:#E7F7EE;border:1.5px solid #C7E6D4;border-radius:8px;padding:7px 0}
+  .yin{width:100%;font-family:'Jua',sans-serif;font-size:16px;color:var(--ink);text-align:center;
+    border:1.5px solid var(--border);background:#fff;border-radius:8px;padding:7px 0;outline:none;
+    transition:all .15s;-moz-appearance:textfield}
+  .yin::-webkit-outer-spin-button,.yin::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .yin::placeholder{color:#C8C0A8}
+  .yin:focus{border-color:#B9CFEE;box-shadow:0 0 0 3px var(--primary-soft)}
+  .yin.wrong{border-color:#E5A0A0;background:#FDF2F2;color:#B23130;animation:shake .25s}
+  .yin.ok{border-color:#9FD8BB;background:#E7F7EE;color:#137A4F;font-weight:700}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+
+  /* 표 위 화살표 (활동 2) */
+  .arrows-svg{position:absolute;left:0;right:0;top:0;height:100%;pointer-events:none;z-index:5;display:none}
+
+  /* 좌표 칩 (입력된 점) */
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px;min-height:32px}
+  .chip{font-family:'Jua',sans-serif;font-size:13px;padding:5px 10px;border-radius:999px;
+    border:1.5px dashed #D7CFB7;color:#A39A82;background:#FBF7EE;transition:all .18s}
+  .chip.ready{border:1.5px solid #B9CFEE;background:var(--primary-soft);color:var(--primary-d);border-style:solid;
+    animation:pulse 1.6s ease-in-out infinite}
+  .chip.done{border:1.5px solid #9FD8BB;background:#E7F7EE;color:#137A4F;animation:none}
+  .chip.done::after{content:" ✓"}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(47,107,255,.25)}50%{box-shadow:0 0 0 5px rgba(47,107,255,0)}}
+
+  /* 버튼 */
+  .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .btn{font-family:inherit;font-size:14.5px;border:1.5px solid var(--border);background:#fff;color:var(--ink);
+    padding:10px 14px;border-radius:12px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
+    gap:6px;transition:transform .08s, background .15s, border-color .15s}
+  .btn:hover{background:#F4EEE0} .btn:active{transform:scale(.97)}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn.primary:hover{background:var(--primary-d)}
+  .btn.amber{background:var(--amber);border-color:var(--amber);color:#fff}
+  .btn.amber:hover{background:#C9780A;border-color:#C9780A}
+  .btn:disabled{opacity:.55;cursor:default;transform:none}
+
+  .feedback{font-size:14px;line-height:1.55;color:var(--muted);min-height:20px;margin-top:12px}
+  .feedback.ok{color:var(--green)} .feedback.warn{color:var(--warn)}
+  .feedback b{color:inherit}
+
+  /* 진행 단계 */
+  .step{display:flex;align-items:center;gap:8px;margin:8px 0 4px;flex-wrap:wrap}
+  .step .s{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+  .step .num{display:inline-flex;width:20px;height:20px;border-radius:50%;background:#EBE3D2;color:#A39A82;
+    align-items:center;justify-content:center;font-size:11px;font-weight:700;flex:none}
+  .step .s.cur{color:var(--primary-d)} .step .s.cur .num{background:var(--primary);color:#fff}
+  .step .s.done{color:var(--green)} .step .s.done .num{background:var(--green);color:#fff}
+  .step .sep{height:2px;width:14px;background:#EBE3D2;border-radius:2px}
+
+  @media(max-width:880px){.layout{grid-template-columns:1fr}body{padding:14px}h1{font-size:25px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V4M4 20h16M8 16l4-5 3 3 5-7"/></svg>
+      중등 수학 · 일차함수 학습 활동
+    </span>
+    <h1>일차함수 그래프 <span class="hl">학습 활동</span></h1>
+    <p>표를 채우고, 좌표평면에 점을 찍어 그래프를 완성해 봐요</p>
+  </header>
+
+  <!-- 활동 1: 생각펼치기 -->
+  <section class="activity">
+    <div class="act-head">
+      <span class="pill open">생각 펼치기</span>
+      <span class="act-title">일차함수의 그래프 그리기</span>
+    </div>
+    <p class="act-lead">다음 일차함수에 대하여 표를 완성하고, 순서쌍 (x, y) 를 좌표로 하는 점을 좌표평면에 직접 찍어 본 뒤 정답을 확인해 봅시다.</p>
+
+    <div class="teacher-bar" id="a1Teacher">
+      <div class="eq-now" id="a1eq">y = 2x + 1</div>
+      <span class="t-lead">👨‍🏫 교사 도구</span>
+      <label>a <select id="a1a">
+        <option>−3</option><option>−2</option><option>−1</option><option>1</option><option selected>2</option><option>3</option>
+      </select></label>
+      <label>b <select id="a1b">
+        <option>−4</option><option>−3</option><option>−2</option><option>−1</option><option>0</option>
+        <option selected>1</option><option>2</option><option>3</option><option>4</option>
+      </select></label>
+      <button class="btn t-mini" id="a1apply">새 문제 만들기</button>
+      <button class="btn t-mini" id="a1rand">🎲 랜덤</button>
+    </div>
+
+    <div class="step">
+      <div class="s" id="a1step1"><span class="num">1</span>표 채우기</div>
+      <span class="sep"></span>
+      <div class="s" id="a1step2"><span class="num">2</span>점 찍기</div>
+      <span class="sep"></span>
+      <div class="s" id="a1step3"><span class="num">3</span>그래프 완성</div>
+    </div>
+
+    <div class="layout">
+      <div class="work-area">
+        <table>
+          <tr>
+            <th>x</th>
+            <td class="xv">−2</td><td class="xv">−1</td><td class="xv">0</td><td class="xv">1</td><td class="xv">2</td>
+          </tr>
+          <tr>
+            <th>y</th>
+            <td><input class="yin" data-act="1" data-i="0" type="text" inputmode="text" maxlength="3" placeholder="?"></td>
+            <td><input class="yin" data-act="1" data-i="1" type="text" inputmode="text" maxlength="3" placeholder="?"></td>
+            <td><input class="yin" data-act="1" data-i="2" type="text" inputmode="text" maxlength="3" placeholder="?"></td>
+            <td><input class="yin" data-act="1" data-i="3" type="text" inputmode="text" maxlength="3" placeholder="?"></td>
+            <td><input class="yin" data-act="1" data-i="4" type="text" inputmode="text" maxlength="3" placeholder="?"></td>
+          </tr>
+        </table>
+        <div class="chips" id="a1chips"></div>
+        <div class="actions">
+          <button class="btn primary" id="a1check">정답 확인 및 그래프 완성</button>
+          <button class="btn" id="a1reset">↻ 그래프 초기화</button>
+        </div>
+        <div class="feedback" id="a1fb"></div>
+      </div>
+      <div class="canvas-area">
+        <canvas id="c1" width="420" height="420"></canvas>
+        <div class="canvas-guide" id="a1guide">💡 격자 교차점을 클릭하면 점이 찍혀요!</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 활동 2: 생각하기 -->
+  <section class="activity">
+    <div class="act-head">
+      <span class="pill think">생각하기</span>
+      <span class="act-title">평행이동을 이용한 일차함수 그래프 그리기</span>
+    </div>
+    <p class="act-lead">기준 그래프 <b id="a2baseEq">y = 2x</b> 가 좌표평면에 그려져 있어요. 표를 채우고, 각 점을 평행이동한 자리에 찍어 <b id="a2targetEq">y = 2x + 3</b> 그래프를 완성해 봅시다.</p>
+
+    <div class="teacher-bar" id="a2Teacher">
+      <div class="eq-now" id="a2eq">y = 2x + 3</div>
+      <span class="t-lead">👨‍🏫 교사 도구</span>
+      <label>a <select id="a2a">
+        <option>−3</option><option>−2</option><option>−1</option><option>1</option><option selected>2</option><option>3</option>
+      </select></label>
+      <label>b <select id="a2b">
+        <option>−4</option><option>−3</option><option>−2</option><option>−1</option>
+        <option selected>3</option><option>1</option><option>2</option><option>4</option>
+      </select></label>
+      <button class="btn t-mini" id="a2apply">새 문제 만들기</button>
+      <button class="btn t-mini" id="a2rand">🎲 랜덤</button>
+    </div>
+
+    <div class="step">
+      <div class="s" id="a2step1"><span class="num">1</span>표 채우기</div>
+      <span class="sep"></span>
+      <div class="s" id="a2step2"><span class="num">2</span>평행이동한 점 찍기</div>
+      <span class="sep"></span>
+      <div class="s" id="a2step3"><span class="num">3</span>선 연결</div>
+    </div>
+
+    <div class="layout">
+      <div class="work-area">
+        <div class="table-wrap">
+          <svg class="arrows-svg" id="a2arrows" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+          <table id="a2table"><!-- JS로 동적 생성 --></table>
+        </div>
+        <div class="actions">
+          <button class="btn primary" id="a2check">정답 확인</button>
+          <button class="btn amber" id="a2connect" disabled>이동한 점 연결하기</button>
+          <button class="btn" id="a2reset">↻ 그래프 초기화</button>
+        </div>
+        <div class="feedback" id="a2fb"></div>
+      </div>
+      <div class="canvas-area">
+        <canvas id="c2" width="420" height="420"></canvas>
+        <div class="canvas-guide" id="a2guide">💡 표를 채운 뒤, 기준 점을 평행이동한 격자점을 클릭해 보세요</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const fmt=n=>n<0?("−"+Math.abs(n)):String(n);
+  const ease=t=>1-Math.pow(1-t,3);
+
+  /* ====================== 공통 캔버스 헬퍼 ====================== */
+  function mkPlot(canvas, minX, maxX, minY, maxY){
+    const W=canvas.width, H=canvas.height;
+    const DPR=Math.min(window.devicePixelRatio||1,2);
+    canvas.width=W*DPR;canvas.height=H*DPR;canvas.style.aspectRatio=(W/H).toString();
+    const ctx=canvas.getContext("2d");ctx.scale(DPR,DPR);
+    const sX=W/(maxX-minX), sY=H/(maxY-minY);
+    const OX=-minX*sX, OY=maxY*sY;
+    const px=x=>OX+x*sX, py=y=>OY-y*sY;
+    function drawGrid(){
+      ctx.clearRect(0,0,W,H);
+      ctx.strokeStyle="#EDE6D6";ctx.lineWidth=1;
+      for(let x=minX;x<=maxX;x++){ctx.beginPath();ctx.moveTo(px(x),0);ctx.lineTo(px(x),H);ctx.stroke();}
+      for(let y=minY;y<=maxY;y++){ctx.beginPath();ctx.moveTo(0,py(y));ctx.lineTo(W,py(y));ctx.stroke();}
+      ctx.strokeStyle="#9C9684";ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(0,OY);ctx.lineTo(W,OY);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(OX,0);ctx.lineTo(OX,H);ctx.stroke();
+      ctx.fillStyle="#B0A992";ctx.font="11px 'Gowun Dodum'";ctx.textAlign="center";ctx.textBaseline="middle";
+      for(let x=minX;x<=maxX;x++){if(x===0)continue;ctx.fillText(x,px(x),OY+13);}
+      for(let y=minY;y<=maxY;y++){if(y===0)continue;ctx.fillText(y,OX-13,py(y));}
+      ctx.fillStyle="#9C9684";ctx.font="italic 14px 'Gowun Dodum'";
+      ctx.fillText("x",W-12,OY-10);ctx.fillText("y",OX+12,12);
+      ctx.fillStyle="#B0A992";ctx.font="11px 'Gowun Dodum'";ctx.fillText("O",OX-11,OY+13);
+    }
+    function clipLine(m,c){
+      const cand=[[minX,m*minX+c],[maxX,m*maxX+c]];
+      if(m!==0){cand.push([(minY-c)/m,minY]);cand.push([(maxY-c)/m,maxY]);}
+      const out=[];
+      for(const[a,b]of cand) if(a>=minX-1e-6&&a<=maxX+1e-6&&b>=minY-1e-6&&b<=maxY+1e-6)
+        if(!out.some(q=>Math.abs(q[0]-a)<1e-6&&Math.abs(q[1]-b)<1e-6)) out.push([a,b]);
+      return out.slice(0,2);
+    }
+    function drawLine(m,c,color,width,dash){
+      const e=clipLine(m,c);if(e.length<2)return;
+      ctx.save();ctx.setLineDash(dash||[]);ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap="round";
+      ctx.beginPath();ctx.moveTo(px(e[0][0]),py(e[0][1]));ctx.lineTo(px(e[1][0]),py(e[1][1]));ctx.stroke();
+      ctx.restore();
+    }
+    function drawPartialLine(m,c,color,width,t){
+      const e=clipLine(m,c);if(e.length<2)return;
+      const x1=px(e[0][0]),y1=py(e[0][1]),x2=px(e[1][0]),y2=py(e[1][1]);
+      ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap="round";
+      ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x1+(x2-x1)*t,y1+(y2-y1)*t);ctx.stroke();
+    }
+    function lineLabel(m,c,color,text){
+      const e=clipLine(m,c);if(e.length<2)return;
+      const top=e[0][1]>e[1][1]?e[0]:e[1], other=e[0][1]>e[1][1]?e[1]:e[0];
+      const dx=other[0]-top[0],dy=other[1]-top[1];
+      let ax=top[0],ay=top[1];
+      for(let s=0;s<=1;s+=0.05){
+        const x=top[0]+dx*s, y=top[1]+dy*s;
+        if(x>minX+0.6&&x<maxX-0.6&&y>minY+0.6&&y<maxY-0.6){ax=x;ay=y;break;}
+      }
+      const left=m>=0;
+      let X=px(ax)+(left?-8:8), Y=py(ay)-6;
+      ctx.fillStyle=color;ctx.font="15px 'Gowun Dodum'";ctx.textAlign=left?"right":"left";ctx.textBaseline="bottom";
+      ctx.fillText(text,X,Y);
+    }
+    function ringMarker(x,y){
+      ctx.fillStyle="#fff";ctx.strokeStyle="#3E7BD6";ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(px(x),py(y),5.5,0,Math.PI*2);ctx.fill();ctx.stroke();
+      ctx.fillStyle="#3E7BD6";ctx.beginPath();ctx.arc(px(x),py(y),1.6,0,Math.PI*2);ctx.fill();
+    }
+    function greenDot(x,y){
+      ctx.fillStyle="#1BA56B";ctx.strokeStyle="#fff";ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(px(x),py(y),7,0,Math.PI*2);ctx.fill();ctx.stroke();
+      ctx.fillStyle="#fff";ctx.font="12px 'Gowun Dodum'";ctx.textAlign="center";ctx.textBaseline="middle";
+      ctx.fillText("✓",px(x),py(y)+0.5);
+    }
+    function hoverRing(g){
+      if(!g)return;
+      ctx.strokeStyle="rgba(124,92,252,.65)";ctx.lineWidth=2;ctx.setLineDash([3,3]);
+      ctx.beginPath();ctx.arc(px(g.x),py(g.y),9,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+    }
+    function arrow(x,y1,y2,label){
+      const X=px(x),Y1=py(y1),Y2=py(y2),dir=y2>y1?-1:1;
+      ctx.strokeStyle="#E8920C";ctx.lineWidth=2.5;ctx.setLineDash([]);
+      ctx.beginPath();ctx.moveTo(X,Y1);ctx.lineTo(X,Y2-dir*4);ctx.stroke();
+      ctx.fillStyle="#E8920C";ctx.beginPath();ctx.moveTo(X,Y2);ctx.lineTo(X-5,Y2-dir*9);ctx.lineTo(X+5,Y2-dir*9);ctx.closePath();ctx.fill();
+      ctx.fillStyle="#C9780A";ctx.font="13px 'Gowun Dodum'";ctx.textAlign="left";ctx.textBaseline="middle";
+      ctx.fillText(label,X+10,(Y1+Y2)/2);
+    }
+    function stamp(progress){
+      if(progress<=0)return;
+      const sc=0.6+0.4*ease(Math.min(1,progress));
+      const cx=W-78, cy=70;
+      ctx.save();ctx.translate(cx,cy);ctx.rotate(-13*Math.PI/180);ctx.scale(sc,sc);ctx.globalAlpha=Math.min(1,progress*1.2);
+      ctx.strokeStyle="#E24B4A";ctx.lineWidth=4;ctx.beginPath();ctx.arc(0,0,40,0,Math.PI*2);ctx.stroke();
+      ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(0,0,33,0,Math.PI*2);ctx.stroke();
+      ctx.fillStyle="#E24B4A";ctx.textAlign="center";
+      ctx.font="12px 'Gowun Dodum'";ctx.textBaseline="middle";ctx.fillText("★",0,-18);
+      ctx.font="15px 'Jua'";ctx.fillText("참 잘",0,-1);ctx.fillText("했어요",0,18);
+      ctx.restore();
+    }
+    function toMath(e){
+      const r=canvas.getBoundingClientRect();
+      const lx=(e.clientX-r.left)*(W/r.width), ly=(e.clientY-r.top)*(H/r.height);
+      return {x:(lx-OX)/sX, y:(OY-ly)/sY};
+    }
+    const nearestGrid=m=>({x:Math.max(minX,Math.min(maxX,Math.round(m.x))),y:Math.max(minY,Math.min(maxY,Math.round(m.y)))});
+    return {ctx,W,H,minX,maxX,minY,maxY,px,py,drawGrid,drawLine,drawPartialLine,lineLabel,
+      ringMarker,greenDot,hoverRing,arrow,stamp,toMath,nearestGrid};
+  }
+
+  /* ====================== 활동 1: y = 2x + 1 ====================== */
+  const A1_X=[-2,-1,0,1,2];
+  let a1A=2, a1B=1;
+  const a1cells=A1_X.map(x=>({x,y:a1A*x+a1B,filled:false,plotted:false}));
+  const a1plot=mkPlot($("c1"),-5,5,-5,5);
+  let a1hover=null, a1solved=false, a1lineT=0, a1stampT=0;
+
+  function a1EqText(){
+    let s="y = "+(a1A===1?"x":a1A===-1?"−x":(a1A+"x").replace("-","−"));
+    if(a1B>0)s+=" + "+a1B; else if(a1B<0)s+=" − "+Math.abs(a1B);
+    return s;
+  }
+  function a1Redraw(){
+    a1plot.drawGrid();
+    if(a1solved){a1plot.drawPartialLine(a1A,a1B,"#16467E",3.2,a1lineT); if(a1lineT>=1)a1plot.lineLabel(a1A,a1B,"#16467E",a1EqText());}
+    a1cells.forEach(c=>{if(c.plotted)a1plot.greenDot(c.x,c.y);});
+    if(!a1solved)a1plot.hoverRing(a1hover);
+    if(a1solved)a1plot.stamp(a1stampT);
+  }
+
+  $("c1").addEventListener("pointermove",e=>{
+    if(a1solved)return;
+    const g=a1plot.nearestGrid(a1plot.toMath(e));
+    if(!a1hover||a1hover.x!==g.x||a1hover.y!==g.y){a1hover=g;a1Redraw();}
+  });
+  $("c1").addEventListener("pointerleave",()=>{if(a1hover){a1hover=null;a1Redraw();}});
+  $("c1").addEventListener("pointerdown",e=>{
+    if(a1solved)return;e.preventDefault();
+    const g=a1plot.nearestGrid(a1plot.toMath(e));
+    const cell=a1cells.find(c=>c.x===g.x);
+    if(!cell){a1Feedback("warn","표에 있는 x값 위치를 눌러 보세요.");return;}
+    if(!cell.filled){a1Feedback("warn","x = "+fmt(g.x)+" 의 y값을 먼저 표에 적어 주세요.");return;}
+    if(cell.plotted){a1Feedback("warn","이미 찍은 점이에요.");return;}
+    if(g.y===cell.y){
+      cell.plotted=true;a1RefreshChips();a1UpdateGuide();
+      try{navigator.vibrate&&navigator.vibrate(15);}catch(_){}
+      if(a1cells.every(c=>c.plotted))a1Complete(); else a1Redraw();
+    }else{
+      a1Feedback("warn", g.y<cell.y ? "조금 더 위로 옮겨 보세요!" : "조금 더 아래로 옮겨 보세요!");
+      a1Redraw();
+    }
+  });
+
+  function a1Feedback(cls,text){const el=$("a1fb");el.className="feedback "+cls;el.innerHTML=text;}
+  function a1RefreshChips(){
+    const box=$("a1chips");box.innerHTML="";
+    a1cells.forEach(c=>{
+      const ch=document.createElement("span");ch.className="chip";
+      if(c.plotted){ch.classList.add("done");ch.textContent="("+fmt(c.x)+", "+fmt(c.y)+")";}
+      else if(c.filled){ch.classList.add("ready");ch.textContent="("+fmt(c.x)+", "+fmt(c.y)+")";}
+      else{ch.textContent="("+fmt(c.x)+", ?)";}
+      box.appendChild(ch);
+    });
+  }
+  function a1UpdateSteps(){
+    const f=a1cells.every(c=>c.filled), p=a1cells.every(c=>c.plotted);
+    [$("a1step1"),$("a1step2"),$("a1step3")].forEach(s=>s.classList.remove("cur","done"));
+    if(!f)$("a1step1").classList.add("cur");
+    else if(!p){$("a1step1").classList.add("done");$("a1step2").classList.add("cur");}
+    else if(!a1solved){$("a1step1").classList.add("done");$("a1step2").classList.add("done");$("a1step3").classList.add("cur");}
+    else{$("a1step1").classList.add("done");$("a1step2").classList.add("done");$("a1step3").classList.add("done");}
+  }
+  function a1UpdateGuide(){
+    const g=$("a1guide");
+    const f=a1cells.filter(c=>c.filled).length, p=a1cells.filter(c=>c.plotted).length;
+    g.classList.remove("ready","done");
+    if(f<5){g.innerHTML="💡 표의 빈칸을 채우면 좌표(x, y)가 나타나요";}
+    else if(p<5){g.classList.add("ready");g.innerHTML="🎯 격자 교차점을 눌러 점을 찍어요 · <b>"+p+" / 5</b>";}
+    else{g.classList.add("done");g.innerHTML="🎉 다섯 점을 모두 찍었어요! 정답 확인을 눌러 그래프를 완성해요.";}
+    a1UpdateSteps();
+  }
+  function a1Complete(){
+    a1solved=true;a1Feedback("ok","🎉 <b>정답이에요!</b> "+a1EqText()+" 의 그래프가 완성됐어요.");
+    const start=performance.now();
+    (function frame(now){
+      const t=now-start;a1lineT=Math.min(1,t/650);a1stampT=Math.min(1,Math.max(0,(t-450)/450));a1Redraw();
+      if(t<950)requestAnimationFrame(frame); else{a1lineT=1;a1stampT=1;a1Redraw();}
+    })(start);
+    a1UpdateSteps();
+    const guide=$("a1guide");guide.classList.remove("ready");guide.classList.add("done");
+    guide.innerHTML="🎉 그래프 완성! <b>"+a1EqText()+"</b>";
+  }
+
+  // 표 입력
+  document.querySelectorAll('.yin[data-act="1"]').forEach(inp=>{
+    inp.addEventListener("input",e=>{
+      const i=+inp.dataset.i, cell=a1cells[i];
+      if(cell.filled)return;
+      const v=inp.value.trim().replace(/[−–—]/g,"-");
+      if(v===""||v==="-"){inp.classList.remove("ok","wrong");return;}
+      if(!/^-?\d+$/.test(v)){inp.classList.add("wrong");return;}
+      const n=parseInt(v,10);
+      if(n===cell.y){
+        cell.filled=true;inp.value=fmt(n);inp.readOnly=true;
+        inp.classList.remove("wrong");inp.classList.add("ok");
+        a1RefreshChips();a1UpdateGuide();
+        const next=a1cells.findIndex((c,j)=>j>i&&!c.filled);
+        if(next>=0){const t=document.querySelector(`.yin[data-act="1"][data-i="${next}"]`);t&&t.focus();}
+      }else{
+        inp.classList.remove("ok");inp.classList.add("wrong");
+        a1Feedback("warn","x = "+fmt(cell.x)+" 일 때 y값을 다시 생각해 봐요.");
+      }
+    });
+    inp.addEventListener("keydown",e=>{if(e.key==="Enter"){const next=document.querySelector(`.yin[data-act="1"][data-i="${+inp.dataset.i+1}"]`);next?next.focus():inp.blur();}});
+  });
+
+  $("a1check").addEventListener("click",()=>{
+    if(a1solved)return;
+    const allFilled=a1cells.every(c=>c.filled);
+    if(!allFilled){a1Feedback("warn","표의 빈칸을 먼저 모두 채워 주세요.");return;}
+    const allPlot=a1cells.every(c=>c.plotted);
+    if(!allPlot){a1Feedback("warn","좌표평면에서 다섯 점을 모두 찍어 주세요.");return;}
+    a1Complete();
+  });
+  function a1ResetProblem(){
+    // 현재 a/b 기준으로 상태/입력/캔버스를 초기화 (점수·구조 동일)
+    a1cells.forEach((c,i)=>{c.y=a1A*c.x+a1B;c.filled=false;c.plotted=false;});
+    document.querySelectorAll('.yin[data-act="1"]').forEach(inp=>{inp.value="";inp.readOnly=false;inp.classList.remove("ok","wrong");});
+    a1solved=false;a1lineT=0;a1stampT=0;a1hover=null;a1Feedback("","");
+    $("a1eq").textContent=a1EqText();
+    a1RefreshChips();a1UpdateGuide();a1Redraw();
+  }
+  $("a1reset").addEventListener("click",a1ResetProblem);
+
+  /* ----- 교사 컨트롤: a, b 바꾸기 ----- */
+  function parseSel(v){return parseInt((v||"0").replace(/[−–—]/g,"-"),10);}
+  function applyNewAB(a,b){
+    // 안전 범위: -5..5 좌표평면에서 5개 점이 모두 보이도록 제한
+    // x ∈ [-2,2] 일 때 |a*x+b| ≤ 5 → |2a|+|b| ≤ 5 도 함께 확인
+    const yMax=Math.max(...A1_X.map(x=>Math.abs(a*x+b)));
+    if(yMax>5){
+      a1Feedback("warn","그 a, b는 점이 화면 밖으로 나가요. 다른 값을 골라 보세요. <small>(|y| ≤ 5)</small>");
+      return false;
+    }
+    if(a===0){a1Feedback("warn","a 는 0이 아닌 값을 골라요.");return false;}
+    a1A=a;a1B=b;a1ResetProblem();return true;
+  }
+  $("a1apply").addEventListener("click",()=>{
+    applyNewAB(parseSel($("a1a").value),parseSel($("a1b").value));
+  });
+  $("a1rand").addEventListener("click",()=>{
+    const aPool=[-3,-2,-1,1,2,3], bPool=[-4,-3,-2,-1,0,1,2,3,4];
+    for(let i=0;i<40;i++){
+      const a=aPool[Math.floor(Math.random()*aPool.length)];
+      const b=bPool[Math.floor(Math.random()*bPool.length)];
+      if(a===a1A&&b===a1B)continue;
+      const yMax=Math.max(...A1_X.map(x=>Math.abs(a*x+b)));
+      if(yMax<=5){
+        $("a1a").value=(a<0?"−":"")+Math.abs(a);
+        $("a1b").value=b===0?"0":(b<0?"−":"")+Math.abs(b);
+        applyNewAB(a,b);return;
+      }
+    }
+  });
+
+  /* ====================== 활동 2: y = ax → y = ax + b (a,b 조정 가능) ====================== */
+  const A2_X=[-2,-1,0,1,2];
+  let a2A=2, a2B=3;
+  let a2cells=A2_X.map(x=>({x,baseY:a2A*x,targetY:a2A*x+a2B,filled:false,plotted:false}));
+  const a2plot=mkPlot($("c2"),-8,8,-8,8);
+  let a2hover=null, a2solved=false, a2lineT=0, a2stampT=0, a2phase=1; // 1: 표채우기 / 2: 점찍기 / 3: 선연결됨
+
+  function a2Slope(){return a2A===1?"x":a2A===-1?"−x":(a2A+"x").replace("-","−");}
+  function a2BaseEq(){return "y = "+a2Slope();}
+  function a2TargetEq(){let s="y = "+a2Slope();if(a2B>0)s+=" + "+a2B;else if(a2B<0)s+=" − "+Math.abs(a2B);return s;}
+  function a2ShiftText(){return (a2B>0?"위로 ":"아래로 ")+Math.abs(a2B)+"칸";}
+  function a2ArrowLabel(){return (a2B>0?"+":"−")+Math.abs(a2B)+"칸";}
+
+  function a2Redraw(){
+    a2plot.drawGrid();
+    // 주어진 기준 그래프 y=ax — 처음부터 실선으로 그려진 상태
+    a2plot.drawLine(a2A,0, a2phase>=2?"#A9C4E8":"#3E7BD6", 2.5);
+    a2plot.lineLabel(a2A,0, a2phase>=2?"#9BB4D6":"#3E7BD6", a2BaseEq());
+    // 기준 점들 (y=ax 위에)
+    a2cells.forEach(c=>a2plot.ringMarker(c.x,c.baseY));
+    // 화살표 + 옮긴 점
+    a2cells.forEach(c=>{
+      if(c.plotted){
+        a2plot.arrow(c.x,c.baseY,c.targetY,a2ArrowLabel());
+        a2plot.greenDot(c.x,c.targetY);
+      }
+    });
+    if(a2solved){
+      a2plot.drawPartialLine(a2A,a2B,"#16467E",3.2,a2lineT);
+      if(a2lineT>=1)a2plot.lineLabel(a2A,a2B,"#16467E",a2TargetEq());
+      a2plot.stamp(a2stampT);
+    }
+    if(!a2solved&&a2phase>=2)a2plot.hoverRing(a2hover);
+  }
+
+  // 표를 a,b에 맞춰 동적으로 생성
+  function a2BuildTable(){
+    const tbl=$("a2table");
+    const xrow=A2_X.map(x=>'<td class="xv">'+fmt(x)+'</td>').join("");
+    const base=a2cells.map(c=>'<td class="gv">'+fmt(c.baseY)+'</td>').join("");
+    const yin=a2cells.map((c,i)=>'<td><input class="yin" data-act="2" data-i="'+i+'" type="text" inputmode="text" maxlength="3" placeholder="?"></td>').join("");
+    const slope=a2Slope().replace("−","-");
+    const head3=slope+(a2B>0?"+"+a2B:a2B<0?"−"+Math.abs(a2B):"");
+    tbl.innerHTML=
+      '<tr><th>x</th>'+xrow+'</tr>'+
+      '<tr><th>'+slope+'</th>'+base+'</tr>'+
+      '<tr><th>'+head3+'</th>'+yin+'</tr>';
+    a2BindInputs();
+  }
+
+  $("c2").addEventListener("pointermove",e=>{
+    if(a2solved||a2phase<2)return;
+    const g=a2plot.nearestGrid(a2plot.toMath(e));
+    if(!a2hover||a2hover.x!==g.x||a2hover.y!==g.y){a2hover=g;a2Redraw();}
+  });
+  $("c2").addEventListener("pointerleave",()=>{if(a2hover){a2hover=null;a2Redraw();}});
+  $("c2").addEventListener("pointerdown",e=>{
+    if(a2solved||a2phase<2)return;e.preventDefault();
+    const g=a2plot.nearestGrid(a2plot.toMath(e));
+    const cell=a2cells.find(c=>c.x===g.x);
+    if(!cell){a2Feedback("warn","표에 있는 x값 위치를 눌러 보세요.");return;}
+    if(cell.plotted){a2Feedback("warn","이미 찍은 점이에요.");return;}
+    if(g.y===cell.targetY){
+      cell.plotted=true;a2UpdateGuide();a2Redraw();
+      try{navigator.vibrate&&navigator.vibrate(15);}catch(_){}
+      const plotted=a2cells.filter(c=>c.plotted).length;
+      $("a2connect").disabled = plotted<3;
+    }else{
+      a2Feedback("warn", g.y<cell.targetY ? "조금 더 위로 옮겨 보세요!" : "조금 더 아래로 옮겨 보세요!");
+      a2Redraw();
+    }
+  });
+
+  function a2Feedback(cls,text){const el=$("a2fb");el.className="feedback "+cls;el.innerHTML=text;}
+  function a2UpdateSteps(){
+    [$("a2step1"),$("a2step2"),$("a2step3")].forEach(s=>s.classList.remove("cur","done"));
+    if(a2phase===1)$("a2step1").classList.add("cur");
+    else if(a2phase===2){$("a2step1").classList.add("done");$("a2step2").classList.add("cur");}
+    else{$("a2step1").classList.add("done");$("a2step2").classList.add("done");$("a2step3").classList.add(a2solved?"done":"cur");}
+  }
+  function a2UpdateGuide(){
+    const g=$("a2guide");g.classList.remove("ready","done");
+    if(a2phase===1){g.innerHTML="💡 표의 <b>"+a2TargetEq().replace('y = ','')+"</b> 줄을 먼저 채워 주세요";}
+    else if(a2phase===2){
+      const p=a2cells.filter(c=>c.plotted).length;
+      g.classList.add("ready");
+      g.innerHTML="🎯 기준 점을 <b>"+a2ShiftText()+"</b> 옮긴 격자점을 클릭해요 · <b>"+p+" / 5</b>";
+    }else{
+      g.classList.add("done");
+      g.innerHTML="🎉 평행이동 완료! <b>"+a2TargetEq()+"</b> 그래프 완성";
+    }
+    a2UpdateSteps();
+  }
+  function a2DrawTableArrows(show){
+    const svg=$("a2arrows");
+    if(!show){svg.style.display="none";svg.innerHTML="";return;}
+    const tbl=$("a2table"); const tRect=tbl.getBoundingClientRect();
+    const inputs=document.querySelectorAll('.yin[data-act="2"]'); if(!inputs.length)return;
+    const baseRow=tbl.rows[1].cells; // ax 행
+    svg.setAttribute("viewBox","0 0 "+tRect.width+" "+tRect.height);
+    svg.style.height=tRect.height+"px";svg.style.width="100%";
+    const lbl=(a2B>0?"+":"−")+Math.abs(a2B);
+    let html='<defs><marker id="ar2" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 10 5 L 0 9 z" fill="#E8920C"/></marker></defs>';
+    for(let i=1;i<baseRow.length;i++){
+      const r1=baseRow[i].getBoundingClientRect();
+      const r2=inputs[i-1].getBoundingClientRect();
+      const x=r1.left-tRect.left+r1.width/2;
+      const y1=r1.top-tRect.top+r1.height-4;
+      const y2=r2.top-tRect.top+4;
+      html+='<path d="M '+x+' '+y1+' Q '+(x+18)+' '+((y1+y2)/2)+' '+x+' '+y2+'" fill="none" stroke="#E8920C" stroke-width="2" marker-end="url(#ar2)"/>';
+      html+='<text x="'+(x+22)+'" y="'+((y1+y2)/2+4)+'" fill="#C9780A" font-family="Jua,sans-serif" font-size="12">'+lbl+'</text>';
+    }
+    svg.innerHTML=html;svg.style.display="block";
+  }
+
+  // 표 입력 (동적 생성된 칸에 바인딩)
+  function a2BindInputs(){
+    document.querySelectorAll('.yin[data-act="2"]').forEach(inp=>{
+      inp.addEventListener("input",()=>{
+        const i=+inp.dataset.i, cell=a2cells[i];
+        if(cell.filled)return;
+        const v=inp.value.trim().replace(/[−–—]/g,"-");
+        if(v===""||v==="-"){inp.classList.remove("ok","wrong");return;}
+        if(!/^-?\d+$/.test(v)){inp.classList.add("wrong");return;}
+        const n=parseInt(v,10);
+        if(n===cell.targetY){
+          cell.filled=true;inp.value=fmt(n);inp.readOnly=true;
+          inp.classList.remove("wrong");inp.classList.add("ok");
+          const next=a2cells.findIndex((c,j)=>j>i&&!c.filled);
+          if(next>=0){const t=document.querySelector(`.yin[data-act="2"][data-i="${next}"]`);t&&t.focus();}
+          if(a2cells.every(c=>c.filled)) a2Feedback("ok","✅ 표를 모두 채웠어요! <b>'정답 확인'</b>을 눌러 다음 단계로 이동하세요.");
+        }else{
+          inp.classList.remove("ok");inp.classList.add("wrong");
+          a2Feedback("warn",a2Slope().replace("−","-")+" 값에 <b>"+(a2B>0?"+"+a2B:a2B)+"</b> 을 해 보세요.");
+        }
+      });
+      inp.addEventListener("keydown",e=>{if(e.key==="Enter"){const next=document.querySelector(`.yin[data-act="2"][data-i="${+inp.dataset.i+1}"]`);next?next.focus():inp.blur();}});
+    });
+  }
+
+  $("a2check").addEventListener("click",()=>{
+    if(a2phase>=2)return;
+    if(!a2cells.every(c=>c.filled)){a2Feedback("warn","표의 빈칸을 먼저 모두 채워 주세요.");return;}
+    a2phase=2;
+    a2Feedback("ok","✅ 표 완성! 기준 점을 <b>"+a2ShiftText()+"</b> 옮긴 격자점을 좌표평면에서 눌러 보세요.");
+    a2DrawTableArrows(true);
+    a2UpdateGuide();a2Redraw();
+  });
+  $("a2connect").addEventListener("click",()=>{
+    if(a2phase<2)return;
+    a2cells.forEach(c=>c.plotted=true);
+    a2phase=3;a2solved=true;
+    const start=performance.now();
+    (function frame(now){
+      const t=now-start;a2lineT=Math.min(1,t/650);a2stampT=Math.min(1,Math.max(0,(t-450)/450));a2Redraw();
+      if(t<950)requestAnimationFrame(frame); else{a2lineT=1;a2stampT=1;a2Redraw();}
+    })(start);
+    a2Feedback("ok","🎉 <b>완벽해요!</b> "+a2BaseEq()+" 를 "+a2ShiftText()+" 평행이동한 그래프가 곧 <b>"+a2TargetEq()+"</b> 이에요.");
+    a2UpdateGuide();
+  });
+  function a2ResetProblem(){
+    a2cells=A2_X.map(x=>({x,baseY:a2A*x,targetY:a2A*x+a2B,filled:false,plotted:false}));
+    a2phase=1;a2solved=false;a2lineT=0;a2stampT=0;a2hover=null;
+    $("a2connect").disabled=true;a2DrawTableArrows(false);
+    $("a2eq").textContent=a2TargetEq();
+    $("a2baseEq").textContent=a2BaseEq();
+    $("a2targetEq").textContent=a2TargetEq();
+    a2BuildTable();a2Feedback("","");a2UpdateGuide();a2Redraw();
+  }
+  $("a2reset").addEventListener("click",a2ResetProblem);
+
+  /* ----- 활동 2 교사 컨트롤: a, b 바꾸기 ----- */
+  function a2Valid(a,b){
+    if(a===0||b===0)return false;
+    return A2_X.every(x=>Math.abs(a*x)<=8 && Math.abs(a*x+b)<=8);
+  }
+  function a2ApplyAB(a,b){
+    if(!a2Valid(a,b)){
+      a2Feedback("warn","그 a, b는 점이 화면 밖으로 나가거나 b=0이에요. 다른 값을 골라 보세요.");
+      return false;
+    }
+    a2A=a;a2B=b;a2ResetProblem();return true;
+  }
+  $("a2apply").addEventListener("click",()=>{
+    a2ApplyAB(parseSel($("a2a").value),parseSel($("a2b").value));
+  });
+  $("a2rand").addEventListener("click",()=>{
+    const aPool=[-3,-2,-1,1,2,3], bPool=[-4,-3,-2,-1,1,2,3,4];
+    for(let i=0;i<60;i++){
+      const a=aPool[Math.floor(Math.random()*aPool.length)];
+      const b=bPool[Math.floor(Math.random()*bPool.length)];
+      if(a===a2A&&b===a2B)continue;
+      if(a2Valid(a,b)){
+        $("a2a").value=(a<0?"−":"")+Math.abs(a);
+        $("a2b").value=(b<0?"−":"")+Math.abs(b);
+        a2ApplyAB(a,b);return;
+      }
+    }
+  });
+
+  // 창 크기 변경에 따라 표 화살표 위치 재계산
+  window.addEventListener("resize",()=>{if(a2phase>=2)a2DrawTableArrows(true);});
+
+  /* ===== 교사용 숨김 점검 기능 (학생에게는 보이지 않음) =====
+     • 키보드: S 키를 1.2초 안에 3번 빠르게 (= "sss")  →  지금 보고 있는 활동의 답 자동 채우기
+       (마우스를 올려둔 활동 우선, 없으면 아직 안 끝난 활동을 자동 선택)
+     • 태블릿: 각 그래프의 오른쪽 위 구석을 1.5초 안에 5번 탭  →  그 활동만 자동 채우기
+  */
+  let lastActivity=1;
+  document.querySelector('.activity').addEventListener('pointerenter',()=>lastActivity=1);
+  document.querySelectorAll('.activity')[1].addEventListener('pointerenter',()=>lastActivity=2);
+
+  function a1AutoSolve(){
+    // 표 채우기
+    a1cells.forEach((c,i)=>{
+      c.filled=true;
+      const inp=document.querySelector(`.yin[data-act="1"][data-i="${i}"]`);
+      if(inp){inp.value=fmt(c.y);inp.readOnly=true;inp.classList.remove("wrong");inp.classList.add("ok");}
+    });
+    // 점 찍기
+    a1cells.forEach(c=>c.plotted=true);
+    a1RefreshChips();
+    a1Feedback("","🔎 [교사 확인] 활동 1 답을 자동으로 채웠어요.");
+    a1solved=true;
+    const start=performance.now();
+    (function f(now){const t=now-start;a1lineT=Math.min(1,t/650);a1stampT=Math.min(1,Math.max(0,(t-450)/450));a1Redraw();
+      if(t<950)requestAnimationFrame(f);else{a1lineT=1;a1stampT=1;a1Redraw();}})(start);
+    a1UpdateSteps();
+    const guide=$("a1guide");guide.classList.remove("ready");guide.classList.add("done");
+    guide.innerHTML="🔎 [교사 확인] <b>"+a1EqText()+"</b> 자동 완성";
+  }
+  function a2AutoSolve(){
+    // 표 채우기
+    a2cells.forEach((c,i)=>{
+      c.filled=true;
+      const inp=document.querySelector(`.yin[data-act="2"][data-i="${i}"]`);
+      if(inp){inp.value=fmt(c.targetY);inp.readOnly=true;inp.classList.remove("wrong");inp.classList.add("ok");}
+    });
+    // 점 찍기 + 선 연결
+    a2cells.forEach(c=>c.plotted=true);
+    a2phase=3;a2solved=true;
+    a2DrawTableArrows(true);
+    a2Feedback("","🔎 [교사 확인] 활동 2 답을 자동으로 채웠어요.");
+    const start=performance.now();
+    (function f(now){const t=now-start;a2lineT=Math.min(1,t/650);a2stampT=Math.min(1,Math.max(0,(t-450)/450));a2Redraw();
+      if(t<950)requestAnimationFrame(f);else{a2lineT=1;a2stampT=1;a2Redraw();}})(start);
+    $("a2connect").disabled=true;
+    a2UpdateGuide();
+  }
+  function teacherAutoSolve(){
+    // 마우스를 올려둔 활동 우선, 이미 끝났으면 다른 활동
+    let target=lastActivity;
+    if(target===1&&a1solved&&!a2solved)target=2;
+    else if(target===2&&a2solved&&!a1solved)target=1;
+    if(target===1){if(!a1solved)a1AutoSolve();}
+    else{if(!a2solved)a2AutoSolve();}
+  }
+
+  // 키보드: sss
+  let keyBuf={count:0,timer:null};
+  function onSecretKey(e){
+    if(e.code!=="KeyS"){keyBuf.count=0;return;}
+    if(e.ctrlKey||e.metaKey||e.altKey)return;
+    keyBuf.count++;clearTimeout(keyBuf.timer);
+    keyBuf.timer=setTimeout(()=>{keyBuf.count=0;},1200);
+    if(keyBuf.count>=3){keyBuf.count=0;clearTimeout(keyBuf.timer);e.preventDefault();teacherAutoSolve();}
+  }
+  window.addEventListener("keydown",onSecretKey,true);
+  document.addEventListener("keydown",onSecretKey,true);
+
+  // 태블릿: 각 그래프 카드 오른쪽 위 구석 5탭
+  function addHotspot(card,fn){
+    const hot=document.createElement("div");
+    hot.style.cssText="position:absolute;top:12px;right:12px;width:38px;height:38px;z-index:8;background:transparent";
+    card.style.position="relative";card.appendChild(hot);
+    let taps=0,timer=null;
+    hot.addEventListener("pointerdown",e=>{
+      e.preventDefault();e.stopPropagation();
+      taps++;clearTimeout(timer);timer=setTimeout(()=>{taps=0;},1500);
+      if(taps>=5){taps=0;clearTimeout(timer);fn();}
+    });
+  }
+  addHotspot(document.querySelectorAll('.canvas-area')[0],()=>{if(!a1solved)a1AutoSolve();});
+  addHotspot(document.querySelectorAll('.canvas-area')[1],()=>{if(!a2solved)a2AutoSolve();});
+
+  /* ---------- 시작 ---------- */
+  function start(){
+    $("a1eq").textContent=a1EqText();
+    a1RefreshChips();a1UpdateGuide();a1Redraw();
+    a2BuildTable();
+    $("a2eq").textContent=a2TargetEq();$("a2baseEq").textContent=a2BaseEq();$("a2targetEq").textContent=a2TargetEq();
+    a2UpdateGuide();a2Redraw();
+  }
+  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(start); else start();
+})();
+</script>
+</body>
+</html>
