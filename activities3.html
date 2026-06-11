@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>일차함수 y = ax + b 의 성질 · 탐구 활동</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FBF7EE; --ink:#2C2A25; --muted:#7C7768;
+    --card:#FFFFFF; --border:#E8E1D0; --line:#EDE6D6;
+    --given:#3E7BD6; --new:#16467E; --primary:#2F6BFF; --primary-d:#1E4FCC; --primary-soft:#E9F0FF;
+    --purple:#7C5CFC; --amber:#E8920C; --green:#1BA56B; --stamp:#E24B4A; --warn:#D9772A;
+    --r:14px; --r-lg:20px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Gowun Dodum','Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:var(--ink);
+    background:
+      linear-gradient(var(--line) 1px,transparent 1px) 0 0/26px 26px,
+      linear-gradient(90deg,var(--line) 1px,transparent 1px) 0 0/26px 26px, var(--paper);
+    -webkit-font-smoothing:antialiased;padding:20px;
+  }
+  .wrap{max-width:1060px;margin:0 auto}
+  header{text-align:center;margin-bottom:18px}
+  .badge{display:inline-flex;align-items:center;gap:7px;background:var(--primary-soft);color:var(--primary-d);
+    font-size:13px;padding:5px 14px;border-radius:999px;margin-bottom:10px}
+  .badge svg{width:15px;height:15px}
+  h1{font-family:'Jua',sans-serif;font-size:30px;font-weight:400;letter-spacing:-.5px;line-height:1.2}
+  h1 .hl{color:var(--primary)}
+  header p{color:var(--muted);font-size:15px;margin-top:6px}
+
+  .activity{background:var(--card);border:1.5px solid var(--border);border-radius:var(--r-lg);
+    padding:22px;box-shadow:0 10px 30px -18px rgba(60,50,20,.35);margin-bottom:24px;position:relative}
+  .act-head{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;padding:5px 12px;border-radius:999px;
+    font-family:'Jua',sans-serif;letter-spacing:.2px}
+  .pill.a{background:#E6F3FF;color:#1E5FA8}
+  .pill.b{background:#FFF1E2;color:#A86A0F}
+  .act-title{font-family:'Jua',sans-serif;font-size:22px;font-weight:400}
+  .act-lead{font-size:14px;color:var(--muted);line-height:1.65;margin:8px 0 4px}
+  .act-lead b{color:var(--ink)}
+
+  .layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,420px);gap:22px;align-items:start;margin-top:16px}
+  .panel-left{min-width:0}
+  .panel-right{min-width:0;display:flex;flex-direction:column;gap:14px}
+  @media(max-width:880px){.layout{grid-template-columns:1fr}}
+
+  /* 슬라이더 카드 */
+  .slider-card{background:#FCF9F1;border:1.5px solid var(--border);border-radius:14px;padding:14px 16px}
+  .slider-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .slider-eq{font-family:'Jua',sans-serif;font-size:20px;color:var(--new);
+    background:#EAF1FF;border:1.5px solid #C8DAF3;border-radius:8px;padding:4px 12px;white-space:nowrap}
+  .slider-meta{font-size:12.5px;color:var(--muted)}
+  .slider-row{display:flex;align-items:center;gap:10px;margin-top:6px}
+  .slider-row label{font-family:'Jua',sans-serif;font-size:15px;color:var(--ink);min-width:18px}
+  .slider-row .val{font-family:'Jua',sans-serif;font-size:15px;color:var(--primary-d);background:#fff;
+    border:1.5px solid var(--border);border-radius:8px;padding:3px 10px;min-width:46px;text-align:center}
+  .slider-row .val.neg{color:#B23130;background:#FDF2F2;border-color:#E5A0A0}
+  .slider-row .val.pos{color:#137A4F;background:#E7F7EE;border-color:#9FD8BB}
+  .slider-row .val.zero{color:var(--muted);background:#F4EEE0;border-color:#E8E1D0}
+  input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:8px;border-radius:999px;
+    background:linear-gradient(90deg,#FCDBDB 0%,#F4EEE0 50%,#D7EEE2 100%);outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:22px;height:22px;border-radius:50%;
+    background:var(--primary);border:3px solid #fff;cursor:pointer;box-shadow:0 2px 8px rgba(47,107,255,.4)}
+  input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--primary);
+    border:3px solid #fff;cursor:pointer;box-shadow:0 2px 8px rgba(47,107,255,.4)}
+  .move-count{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;color:var(--muted)}
+  .move-count .dot{width:9px;height:9px;border-radius:50%;background:#EBE3D2;transition:background .2s}
+  .move-count .dot.ok{background:var(--green)}
+  .move-count b{color:var(--ink)}
+
+  /* 캔버스 */
+  canvas{width:100%;max-width:420px;height:auto;display:block;border-radius:12px;background:#fff;
+    border:1.5px solid var(--border);box-shadow:0 6px 18px -14px rgba(60,50,20,.4);margin-top:12px}
+
+  /* 관찰 표 */
+  .observe{background:#FCF9F1;border:1.5px solid var(--border);border-radius:14px;padding:14px 16px;
+    opacity:.45;pointer-events:none;transition:opacity .25s}
+  .observe.live{opacity:1;pointer-events:auto}
+  .observe-ttl{font-family:'Jua',sans-serif;font-size:15px;color:var(--ink);margin-bottom:4px}
+  .observe-sub{font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:12px}
+  .observe-sub b{color:var(--ink)}
+  .case{margin-top:10px;padding:10px 12px;background:#fff;border:1.5px solid var(--border);border-radius:12px}
+  .case-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .case-tag{font-family:'Jua',sans-serif;font-size:13px;padding:3px 10px;border-radius:999px}
+  .case-tag.neg{background:#FDF2F2;color:#B23130}
+  .case-tag.pos{background:#E7F7EE;color:#137A4F}
+  .case-q{font-size:13.5px;color:var(--ink)}
+  .case-q b{font-family:'Jua',sans-serif}
+  .choose{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+  .choose .opt{font-family:'Jua',sans-serif;font-size:14px;color:var(--ink);background:#fff;
+    border:1.5px solid var(--border);border-radius:10px;padding:8px 14px;cursor:pointer;flex:1;min-width:120px;
+    transition:all .15s}
+  .choose .opt:hover{background:#F4EEE0}
+  .choose .opt.picked{background:var(--primary-soft);border-color:#B9CFEE;color:var(--primary-d)}
+  .choose .opt.correct{background:#E7F7EE;border-color:#9FD8BB;color:#137A4F;font-weight:700}
+  .choose .opt.correct::after{content:" ✓"}
+  .choose .opt.wrong{background:#FDF2F2;border-color:#E5A0A0;color:#B23130;animation:shake .25s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+
+  .conclude{margin-top:14px;padding:12px 14px;background:#F6FBF8;border:1.5px solid #D7EEE2;border-radius:14px;
+    opacity:.45;transition:opacity .25s, background .25s}
+  .conclude.live{opacity:1}
+  .conclude.ok{background:#E7F7EE;border-color:#9FD8BB}
+  .conclude .ttl{font-family:'Jua',sans-serif;font-size:14.5px;color:var(--ink);margin-bottom:8px}
+  .conclude .ttl b{color:var(--green)}
+  .conclude textarea{width:100%;font-family:inherit;font-size:14px;color:var(--ink);line-height:1.55;
+    border:1.5px solid var(--border);border-radius:10px;background:#fff;padding:9px 11px;resize:vertical;min-height:54px;outline:none}
+  .conclude textarea::placeholder{color:#C8C0A8}
+  .conclude textarea:focus{border-color:#B9DECB;box-shadow:0 0 0 3px #DCEFE3}
+  .conclude textarea.ok{background:#E7F7EE;border-color:#9FD8BB;color:#137A4F}
+  .conclude textarea.wrong{background:#FDF2F2;border-color:#E5A0A0;color:#B23130;animation:shake .25s}
+  .conclude .act{display:flex;justify-content:flex-end;margin-top:8px}
+  .conclude .btn-sm{font-family:inherit;font-size:13px;background:#fff;border:1.5px solid var(--border);
+    border-radius:10px;padding:7px 12px;cursor:pointer}
+  .conclude .btn-sm:hover{background:#F4EEE0}
+  .feedback{font-size:13.5px;line-height:1.55;color:var(--muted);min-height:18px;margin-top:8px}
+  .feedback.ok{color:var(--green)} .feedback.warn{color:var(--warn)}
+  .feedback b{color:inherit}
+
+  /* 정리 */
+  .summary{margin-top:8px;background:#FFFDF6;border:2px dashed #ECD8A0;border-radius:16px;padding:18px 20px;display:none}
+  .summary.show{display:block;animation:rise .4s ease}
+  @keyframes rise{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
+  .summary h3{font-family:'Jua',sans-serif;font-size:18px;color:#8A6312;margin-bottom:8px}
+  .summary p{font-size:14px;line-height:1.8;color:var(--ink)}
+  .summary .key{font-family:'Jua',sans-serif;background:#FFF3DD;color:#A86A0F;padding:2px 8px;border-radius:6px;white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V4M4 20h16M6 18l4-6 3 4 5-9"/></svg>
+      중등 수학 · 일차함수 학습 활동
+    </span>
+    <h1>일차함수 <span class="hl">y = ax + b</span> 의 성질 탐구</h1>
+    <p>슬라이더를 움직여 그래프가 어떻게 변하는지 직접 관찰해 봐요</p>
+  </header>
+
+  <!-- 탐구 1: a의 부호 -->
+  <section class="activity" id="actA">
+    <div class="act-head">
+      <span class="pill a">생각펼치기 1</span>
+      <span class="act-title"><b style="color:#1E5FA8">a 값의 부호</b>가 바뀌면 그래프는 어떻게 될까?</span>
+    </div>
+    <p class="act-lead">b 는 <b>1</b> 로 두고, <b>a 슬라이더를 직접 움직이면서</b> 그래프의 모양 변화를 관찰해 봐요.</p>
+
+    <div class="layout">
+      <div class="panel-left">
+        <div class="slider-card">
+          <div class="slider-head">
+            <div class="slider-eq" id="eqA">y = 2x + 1</div>
+            <div class="slider-meta">슬라이더를 좌우로 움직여 보세요</div>
+          </div>
+          <div class="slider-row">
+            <label>a</label>
+            <input type="range" id="sliderA" min="-3" max="3" step="0.1" value="2">
+            <span class="val pos" id="valA">2</span>
+          </div>
+          <div class="slider-row">
+            <label>b</label>
+            <span class="val zero" style="background:#F4EEE0;color:var(--muted);border-color:#E8E1D0">1 (고정)</span>
+          </div>
+          <div class="move-count" id="moveA">
+            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+            슬라이더 움직임 <b id="moveCountA">0</b> / 3
+          </div>
+        </div>
+        <canvas id="canA" width="420" height="420"></canvas>
+      </div>
+
+      <div class="panel-right">
+        <div class="observe" id="obsA">
+          <div class="observe-ttl">관찰 표</div>
+          <div class="observe-sub">a 가 양수일 때와 음수일 때 그래프 모양이 어떻게 달라지는지 골라 보세요.</div>
+
+          <div class="case">
+            <div class="case-head"><span class="case-tag pos">a &gt; 0 (양수)</span></div>
+            <div class="case-q">그래프는 오른쪽으로 갈수록 …</div>
+            <div class="choose" data-q="aPos">
+              <button class="opt" data-v="up">올라가는 직선</button>
+              <button class="opt" data-v="down">내려가는 직선</button>
+            </div>
+          </div>
+
+          <div class="case">
+            <div class="case-head"><span class="case-tag neg">a &lt; 0 (음수)</span></div>
+            <div class="case-q">그래프는 오른쪽으로 갈수록 …</div>
+            <div class="choose" data-q="aNeg">
+              <button class="opt" data-v="up">올라가는 직선</button>
+              <button class="opt" data-v="down">내려가는 직선</button>
+            </div>
+          </div>
+
+          <div class="conclude" id="concA">
+            <div class="ttl">🔍 <b>나만의 정리</b> · a의 부호에 따라 그래프는 어떻게 달라질까?</div>
+            <textarea id="concAText" rows="2" placeholder="예) a가 ~일 때 그래프는 ~ 한다."></textarea>
+            <div class="act"><button class="btn-sm" id="concABtn">확인</button></div>
+            <div class="feedback" id="fbA"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 탐구 2: b의 부호 -->
+  <section class="activity" id="actB">
+    <div class="act-head">
+      <span class="pill b">생각펼치기 2</span>
+      <span class="act-title"><b style="color:#A86A0F">b 값의 부호</b>가 바뀌면 그래프는 어떻게 될까?</span>
+    </div>
+    <p class="act-lead">a 는 <b>2</b> 로 두고, <b>b 슬라이더를 직접 움직이면서</b> 그래프가 y축과 어디서 만나는지 관찰해 봐요.</p>
+
+    <div class="layout">
+      <div class="panel-left">
+        <div class="slider-card">
+          <div class="slider-head">
+            <div class="slider-eq" id="eqB">y = 2x + 1</div>
+            <div class="slider-meta">슬라이더를 좌우로 움직여 보세요</div>
+          </div>
+          <div class="slider-row">
+            <label>a</label>
+            <span class="val zero" style="background:#F4EEE0;color:var(--muted);border-color:#E8E1D0">2 (고정)</span>
+          </div>
+          <div class="slider-row">
+            <label>b</label>
+            <input type="range" id="sliderB" min="-4" max="4" step="0.1" value="1">
+            <span class="val pos" id="valB">1</span>
+          </div>
+          <div class="move-count" id="moveB">
+            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+            슬라이더 움직임 <b id="moveCountB">0</b> / 3
+          </div>
+        </div>
+        <canvas id="canB" width="420" height="420"></canvas>
+      </div>
+
+      <div class="panel-right">
+        <div class="observe" id="obsB">
+          <div class="observe-ttl">관찰 표</div>
+          <div class="observe-sub">b 가 양수일 때와 음수일 때 그래프가 <b>y축</b>과 어디서 만나는지 골라 보세요.</div>
+
+          <div class="case">
+            <div class="case-head"><span class="case-tag pos">b &gt; 0 (양수)</span></div>
+            <div class="case-q">그래프는 y축의 …</div>
+            <div class="choose" data-q="bPos">
+              <button class="opt" data-v="up">양의 부분 (위쪽)</button>
+              <button class="opt" data-v="down">음의 부분 (아래쪽)</button>
+            </div>
+          </div>
+
+          <div class="case">
+            <div class="case-head"><span class="case-tag neg">b &lt; 0 (음수)</span></div>
+            <div class="case-q">그래프는 y축의 …</div>
+            <div class="choose" data-q="bNeg">
+              <button class="opt" data-v="up">양의 부분 (위쪽)</button>
+              <button class="opt" data-v="down">음의 부분 (아래쪽)</button>
+            </div>
+          </div>
+
+          <div class="conclude" id="concB">
+            <div class="ttl">🔍 <b>나만의 정리</b> · b의 부호에 따라 그래프와 y축의 만남은 어떻게 달라질까?</div>
+            <textarea id="concBText" rows="2" placeholder="예) b가 ~일 때 그래프는 y축의 ~ 에서 만난다."></textarea>
+            <div class="act"><button class="btn-sm" id="concBBtn">확인</button></div>
+            <div class="feedback" id="fbB"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="summary" id="summary">
+    <h3>🎓 오늘 발견한 것</h3>
+    <p>
+      <span class="key">a &gt; 0</span> 이면 그래프는 오른쪽으로 갈수록 <b>올라가는 직선</b>,
+      <span class="key">a &lt; 0</span> 이면 <b>내려가는 직선</b> 이에요.<br>
+      <span class="key">b &gt; 0</span> 이면 그래프는 y축의 <b>양의 부분</b>에서,
+      <span class="key">b &lt; 0</span> 이면 y축의 <b>음의 부분</b>에서 만나요.
+    </p>
+  </section>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+
+  /* ===== 공통 미니 캔버스 ===== */
+  function mkPlot(canvas, range){
+    const W=420,H=420, R=range||7;
+    const DPR=Math.min(window.devicePixelRatio||1,2);
+    canvas.width=W*DPR;canvas.height=H*DPR;
+    const ctx=canvas.getContext("2d");ctx.scale(DPR,DPR);
+    const sX=W/(R*2), sY=H/(R*2), OX=W/2, OY=H/2;
+    const px=x=>OX+x*sX, py=y=>OY-y*sY;
+    function drawGrid(){
+      ctx.clearRect(0,0,W,H);
+      ctx.strokeStyle="#EDE6D6";ctx.lineWidth=1;
+      for(let i=-R;i<=R;i++){
+        ctx.beginPath();ctx.moveTo(px(i),0);ctx.lineTo(px(i),H);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(0,py(i));ctx.lineTo(W,py(i));ctx.stroke();
+      }
+      ctx.strokeStyle="#9C9684";ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(0,OY);ctx.lineTo(W,OY);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(OX,0);ctx.lineTo(OX,H);ctx.stroke();
+      ctx.fillStyle="#B0A992";ctx.font="11px 'Gowun Dodum'";ctx.textAlign="center";ctx.textBaseline="middle";
+      for(let i=-R;i<=R;i++){if(i===0)continue;ctx.fillText(i,px(i),OY+13);ctx.fillText(i,OX-13,py(i));}
+      ctx.fillStyle="#9C9684";ctx.font="italic 14px 'Gowun Dodum'";
+      ctx.fillText("x",W-12,OY-10);ctx.fillText("y",OX+12,12);
+      ctx.fillStyle="#B0A992";ctx.font="11px 'Gowun Dodum'";ctx.fillText("O",OX-11,OY+13);
+    }
+    function clipLine(m,c){
+      const cand=[[-R,m*(-R)+c],[R,m*R+c]];
+      if(m!==0){cand.push([(-R-c)/m,-R]);cand.push([(R-c)/m,R]);}
+      const out=[];
+      for(const[x,y]of cand) if(x>=-R-1e-6&&x<=R+1e-6&&y>=-R-1e-6&&y<=R+1e-6)
+        if(!out.some(q=>Math.abs(q[0]-x)<1e-6&&Math.abs(q[1]-y)<1e-6)) out.push([x,y]);
+      return out.slice(0,2);
+    }
+    function drawLine(m,c,color,w){
+      const e=clipLine(m,c);if(e.length<2)return;
+      ctx.strokeStyle=color;ctx.lineWidth=w;ctx.lineCap="round";
+      ctx.beginPath();ctx.moveTo(px(e[0][0]),py(e[0][1]));ctx.lineTo(px(e[1][0]),py(e[1][1]));ctx.stroke();
+    }
+    function yMark(b,color){
+      // y절편 강조
+      ctx.fillStyle=color;ctx.strokeStyle="#fff";ctx.lineWidth=2.5;
+      ctx.beginPath();ctx.arc(px(0),py(b),7,0,Math.PI*2);ctx.fill();ctx.stroke();
+      ctx.globalAlpha=.35;ctx.strokeStyle=color;ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(px(0),py(b),12,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
+    }
+    function eqLabel(m,c,color,text){
+      const e=clipLine(m,c);if(e.length<2)return;
+      const top=e[0][1]>e[1][1]?e[0]:e[1], other=e[0][1]>e[1][1]?e[1]:e[0];
+      const dx=other[0]-top[0],dy=other[1]-top[1];
+      let ax=top[0],ay=top[1];
+      for(let s=0;s<=1;s+=0.05){
+        const x=top[0]+dx*s, y=top[1]+dy*s;
+        if(x>-R+0.8&&x<R-0.8&&y>-R+0.8&&y<R-0.8){ax=x;ay=y;break;}
+      }
+      const left=m>=0;
+      const X=px(ax)+(left?-8:8), Y=py(ay)-6;
+      ctx.fillStyle=color;ctx.font="15px 'Gowun Dodum'";ctx.textAlign=left?"right":"left";ctx.textBaseline="bottom";
+      ctx.fillText(text,X,Y);
+    }
+    return {drawGrid,drawLine,yMark,eqLabel};
+  }
+
+  function fmtA(a){
+    if(Math.abs(a)<1e-6) return 0;
+    if(Math.abs(a-Math.round(a))<1e-6) return Math.round(a);
+    return Math.round(a*10)/10;
+  }
+  function eqText(a,b){
+    const ar=fmtA(a), br=fmtA(b);
+    let s;
+    if(ar===0) s="y = ";
+    else if(ar===1) s="y = x";
+    else if(ar===-1) s="y = −x";
+    else{
+      const txt=(ar<0?"−":"")+Math.abs(ar);
+      s="y = "+txt+"x";
+    }
+    if(ar===0){
+      s = "y = "+(br<0?"−"+Math.abs(br):br);
+    }else{
+      if(br>0)s+=" + "+br; else if(br<0)s+=" − "+Math.abs(br);
+    }
+    return s;
+  }
+  function classify(v){return v>0?"pos":v<0?"neg":"zero";}
+
+  /* ====================== 탐구 1: a의 부호 ====================== */
+  const plotA=mkPlot($("canA"),7);
+  let aVal=2, bFixedA=1, aMoves=new Set(), aPrev=2;
+  // 정답
+  const A_ANS={aPos:"up", aNeg:"down"};
+  const A_PICKED={aPos:null, aNeg:null};
+
+  function drawA(){
+    plotA.drawGrid();
+    plotA.drawLine(aVal,bFixedA, aVal>0?"#16467E":aVal<0?"#B23130":"#9C9684", 3.2);
+    plotA.eqLabel(aVal,bFixedA,"#16467E",eqText(aVal,bFixedA));
+  }
+  function updateAUI(){
+    $("eqA").textContent=eqText(aVal,bFixedA);
+    const v=$("valA");
+    const txt = (aVal<0?"−":"")+Math.abs(aVal).toFixed(1);
+    v.textContent=txt;
+    v.className="val "+classify(aVal);
+    drawA();
+  }
+  $("sliderA").addEventListener("input",e=>{
+    aVal=Math.round(parseFloat(e.target.value)*10)/10;
+    // 의미 있는 변화일 때만 움직임 카운트 (소수점 한 자리 단위 변화)
+    if(Math.abs(aVal-aPrev)>0.05){aMoves.add(aVal.toFixed(1));aPrev=aVal;}
+    updateAMoves();
+    updateAUI();
+  });
+  function updateAMoves(){
+    const n=Math.min(3,aMoves.size);
+    $("moveCountA").textContent=n;
+    const dots=$("moveA").querySelectorAll(".dot");
+    dots.forEach((d,i)=>d.classList.toggle("ok",i<n));
+    if(aMoves.size>=3) $("obsA").classList.add("live");
+  }
+
+  function pickA(q,v,btn){
+    A_PICKED[q]=v;
+    const group=btn.parentElement;
+    group.querySelectorAll(".opt").forEach(o=>o.classList.remove("picked","correct","wrong"));
+    btn.classList.add("picked");
+    // 두 칸 모두 채워졌고 모두 정답이면 정리(생각펼치기) 활성화
+    if(A_PICKED.aPos&&A_PICKED.aNeg){
+      const ok = (A_PICKED.aPos===A_ANS.aPos && A_PICKED.aNeg===A_ANS.aNeg);
+      if(ok){
+        markCorrect("aPos");markCorrect("aNeg");
+        $("concA").classList.add("live");
+      }else{
+        // 둘 다 채워졌는데 틀린 부분 표시
+        ["aPos","aNeg"].forEach(q=>{
+          const grp=document.querySelector(`.choose[data-q="${q}"]`);
+          const picked=grp.querySelector(".opt.picked");
+          if(picked && picked.dataset.v!==A_ANS[q]){picked.classList.add("wrong");}
+        });
+        $("concA").classList.remove("live");
+      }
+    }
+  }
+  function markCorrect(q){
+    const grp=document.querySelector(`.choose[data-q="${q}"]`);
+    const picked=grp.querySelector(".opt.picked");
+    if(picked){picked.classList.remove("wrong");picked.classList.add("correct");}
+  }
+  document.querySelectorAll('#obsA .choose .opt').forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      if(!$("obsA").classList.contains("live"))return;
+      const q=btn.parentElement.dataset.q;
+      pickA(q, btn.dataset.v, btn);
+    });
+  });
+
+  /* ====================== 탐구 2: b의 부호 ====================== */
+  const plotB=mkPlot($("canB"),7);
+  let aFixedB=2, bVal=1, bMoves=new Set(), bPrev=1;
+  const B_ANS={bPos:"up", bNeg:"down"};
+  const B_PICKED={bPos:null, bNeg:null};
+
+  function drawB(){
+    plotB.drawGrid();
+    plotB.drawLine(aFixedB,bVal, "#16467E", 3.2);
+    plotB.eqLabel(aFixedB,bVal,"#16467E",eqText(aFixedB,bVal));
+    if(bVal!==0) plotB.yMark(bVal, bVal>0?"#137A4F":"#B23130");
+  }
+  function updateBUI(){
+    $("eqB").textContent=eqText(aFixedB,bVal);
+    const v=$("valB");
+    v.textContent=(bVal<0?"−":"")+Math.abs(bVal).toFixed(1);
+    v.className="val "+classify(bVal);
+    drawB();
+  }
+  $("sliderB").addEventListener("input",e=>{
+    bVal=Math.round(parseFloat(e.target.value)*10)/10;
+    if(Math.abs(bVal-bPrev)>0.05){bMoves.add(bVal.toFixed(1));bPrev=bVal;}
+    updateBMoves();
+    updateBUI();
+  });
+  function updateBMoves(){
+    const n=Math.min(3,bMoves.size);
+    $("moveCountB").textContent=n;
+    const dots=$("moveB").querySelectorAll(".dot");
+    dots.forEach((d,i)=>d.classList.toggle("ok",i<n));
+    if(bMoves.size>=3) $("obsB").classList.add("live");
+  }
+  function pickB(q,v,btn){
+    B_PICKED[q]=v;
+    const group=btn.parentElement;
+    group.querySelectorAll(".opt").forEach(o=>o.classList.remove("picked","correct","wrong"));
+    btn.classList.add("picked");
+    if(B_PICKED.bPos&&B_PICKED.bNeg){
+      const ok=(B_PICKED.bPos===B_ANS.bPos && B_PICKED.bNeg===B_ANS.bNeg);
+      if(ok){
+        markCorrectB("bPos");markCorrectB("bNeg");
+        $("concB").classList.add("live");
+      }else{
+        ["bPos","bNeg"].forEach(q=>{
+          const grp=document.querySelector(`.choose[data-q="${q}"]`);
+          const picked=grp.querySelector(".opt.picked");
+          if(picked && picked.dataset.v!==B_ANS[q]){picked.classList.add("wrong");}
+        });
+        $("concB").classList.remove("live");
+      }
+    }
+  }
+  function markCorrectB(q){
+    const grp=document.querySelector(`.choose[data-q="${q}"]`);
+    const picked=grp.querySelector(".opt.picked");
+    if(picked){picked.classList.remove("wrong");picked.classList.add("correct");}
+  }
+  document.querySelectorAll('#obsB .choose .opt').forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      if(!$("obsB").classList.contains("live"))return;
+      const q=btn.parentElement.dataset.q;
+      pickB(q, btn.dataset.v, btn);
+    });
+  });
+
+  /* ====================== 생각펼치기 정리 문장 채점 ====================== */
+  function checkConcA(text){
+    const t=(text||"").replace(/\s+/g,"").replace(/[−–—]/g,"-");
+    const hasUp=/(올라|상승|증가)/.test(t);
+    const hasDown=/(내려|하강|감소)/.test(t);
+    const hasPos=/(양수|양의|>0|\+|a>0)/.test(t);
+    const hasNeg=/(음수|음의|<0|마이너스|a<0)/.test(t);
+    if((hasPos&&hasUp) || (hasNeg&&hasDown)) return true;
+    return false;
+  }
+  function checkConcB(text){
+    const t=(text||"").replace(/\s+/g,"").replace(/[−–—]/g,"-");
+    const hasUp=/(위|양의부분|양의|양수쪽|위쪽)/.test(t);
+    const hasDown=/(아래|음의부분|음의|음수쪽|아래쪽)/.test(t);
+    const hasPos=/(b가양|b>0|b는양|양수|\+)/.test(t);
+    const hasNeg=/(b가음|b<0|b는음|음수)/.test(t);
+    if((hasPos&&hasUp) || (hasNeg&&hasDown)) return true;
+    return false;
+  }
+
+  $("concABtn").addEventListener("click",()=>{
+    const el=$("concAText"), txt=el.value.trim();
+    const fb=$("fbA");
+    if(txt.length<5){el.classList.add("wrong");fb.className="feedback warn";fb.innerHTML="한 문장으로 정리해서 적어 보세요.";return;}
+    if(checkConcA(txt)){
+      el.classList.remove("wrong");el.classList.add("ok");el.readOnly=true;
+      $("concA").classList.add("ok");
+      fb.className="feedback ok";
+      fb.innerHTML="🎉 <b>잘 정리했어요!</b> a 가 양수면 오른쪽으로 올라가는 직선, 음수면 내려가는 직선이에요.";
+      checkAllDone();
+    }else{
+      el.classList.add("wrong");el.classList.remove("ok");
+      fb.className="feedback warn";
+      fb.innerHTML="a의 <b>부호</b>와 그래프가 <b>올라가는지 / 내려가는지</b>를 한 문장에 함께 적어 보세요.";
+    }
+  });
+  $("concBBtn").addEventListener("click",()=>{
+    const el=$("concBText"), txt=el.value.trim();
+    const fb=$("fbB");
+    if(txt.length<5){el.classList.add("wrong");fb.className="feedback warn";fb.innerHTML="한 문장으로 정리해서 적어 보세요.";return;}
+    if(checkConcB(txt)){
+      el.classList.remove("wrong");el.classList.add("ok");el.readOnly=true;
+      $("concB").classList.add("ok");
+      fb.className="feedback ok";
+      fb.innerHTML="🎉 <b>잘 정리했어요!</b> b 가 양수면 y축의 양의 부분, 음수면 음의 부분에서 만나요. (b 가 바로 <b>y절편</b>)";
+      checkAllDone();
+    }else{
+      el.classList.add("wrong");el.classList.remove("ok");
+      fb.className="feedback warn";
+      fb.innerHTML="b의 <b>부호</b>와 그래프가 y축의 <b>양의/음의 부분</b> 중 어디서 만나는지를 한 문장에 함께 적어 보세요.";
+    }
+  });
+
+  function checkAllDone(){
+    const aOk=$("concA").classList.contains("ok");
+    const bOk=$("concB").classList.contains("ok");
+    if(aOk&&bOk)$("summary").classList.add("show");
+  }
+
+  /* ===== 교사 점검용 sss (학생에게는 안 보임) ===== */
+  function autoA(){
+    // 슬라이더 충족 (다양한 부호의 값들)
+    ["-2.0","-0.5","1.5","2.5"].forEach(v=>aMoves.add(v));
+    aVal=2;aPrev=2;$("sliderA").value="2";
+    updateAMoves();updateAUI();
+    // 정답 선택
+    ["aPos","aNeg"].forEach(q=>{
+      const ans=A_ANS[q], grp=document.querySelector(`.choose[data-q="${q}"]`);
+      const btn=grp.querySelector(`.opt[data-v="${ans}"]`);
+      grp.querySelectorAll(".opt").forEach(o=>o.classList.remove("picked","correct","wrong"));
+      btn.classList.add("picked","correct");
+      A_PICKED[q]=ans;
+    });
+    $("concA").classList.add("live");
+    const el=$("concAText");
+    el.value="a 가 양수일 때 그래프는 오른쪽으로 올라가는 직선이고, a 가 음수일 때는 내려가는 직선이다.";
+    el.classList.remove("wrong");el.classList.add("ok");el.readOnly=true;
+    $("concA").classList.add("ok");
+    $("fbA").className="feedback ok";$("fbA").innerHTML="🔎 <b>[교사 확인]</b> 정답을 자동으로 채웠어요.";
+    checkAllDone();
+  }
+  function autoB(){
+    ["-2.0","-0.5","1.5","2.5"].forEach(v=>bMoves.add(v));
+    bVal=1;bPrev=1;$("sliderB").value="1";
+    updateBMoves();updateBUI();
+    ["bPos","bNeg"].forEach(q=>{
+      const ans=B_ANS[q], grp=document.querySelector(`.choose[data-q="${q}"]`);
+      const btn=grp.querySelector(`.opt[data-v="${ans}"]`);
+      grp.querySelectorAll(".opt").forEach(o=>o.classList.remove("picked","correct","wrong"));
+      btn.classList.add("picked","correct");
+      B_PICKED[q]=ans;
+    });
+    $("concB").classList.add("live");
+    const el=$("concBText");
+    el.value="b 가 양수일 때 그래프는 y축의 양의 부분에서 만나고, b 가 음수일 때는 음의 부분에서 만난다.";
+    el.classList.remove("wrong");el.classList.add("ok");el.readOnly=true;
+    $("concB").classList.add("ok");
+    $("fbB").className="feedback ok";$("fbB").innerHTML="🔎 <b>[교사 확인]</b> 정답을 자동으로 채웠어요.";
+    checkAllDone();
+  }
+  let lastAct="A";
+  $("actA").addEventListener("pointerenter",()=>lastAct="A");
+  $("actB").addEventListener("pointerenter",()=>lastAct="B");
+  function teacherAutoSolve(){
+    const aDone=$("concA").classList.contains("ok");
+    const bDone=$("concB").classList.contains("ok");
+    let target=lastAct;
+    if(target==="A"&&aDone&&!bDone)target="B";
+    else if(target==="B"&&bDone&&!aDone)target="A";
+    if(target==="A"){if(!aDone)autoA();}
+    else{if(!bDone)autoB();}
+  }
+  let keyBuf={count:0,timer:null};
+  function onSecretKey(e){
+    if(e.code!=="KeyS"){keyBuf.count=0;return;}
+    if(e.ctrlKey||e.metaKey||e.altKey)return;
+    keyBuf.count++;clearTimeout(keyBuf.timer);
+    keyBuf.timer=setTimeout(()=>{keyBuf.count=0;},1200);
+    if(keyBuf.count>=3){keyBuf.count=0;clearTimeout(keyBuf.timer);e.preventDefault();teacherAutoSolve();}
+  }
+  window.addEventListener("keydown",onSecretKey,true);
+  document.addEventListener("keydown",onSecretKey,true);
+  function addHot(card,fn){
+    const hot=document.createElement("div");
+    hot.style.cssText="position:absolute;top:12px;right:12px;width:38px;height:38px;z-index:8;background:transparent";
+    card.appendChild(hot);
+    let taps=0,timer=null;
+    hot.addEventListener("pointerdown",e=>{
+      e.preventDefault();e.stopPropagation();
+      taps++;clearTimeout(timer);timer=setTimeout(()=>{taps=0;},1500);
+      if(taps>=5){taps=0;clearTimeout(timer);fn();}
+    });
+  }
+  addHot($("actA"),()=>{if(!$("concA").classList.contains("ok"))autoA();});
+  addHot($("actB"),()=>{if(!$("concB").classList.contains("ok"))autoB();});
+
+  /* ---------- 시작 ---------- */
+  function start(){updateAUI();updateBUI();}
+  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(start); else start();
+})();
+</script>
+</body>
+</html>
