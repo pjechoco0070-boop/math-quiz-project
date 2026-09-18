@@ -61,64 +61,28 @@
     .student-select-row select { padding: 8px 10px; font-size: 0.95rem; border-radius: 6px; border: 2px solid var(--border); background: white; }
     .student-name-input { width: 85%; padding: 10px; font-size: 1rem; border: 2px solid var(--border); border-radius: 6px; margin-bottom: 18px; text-align: center; }
 
-    /* [신규] 좌우 2단 풀이 해설 모달 레이아웃 */
+    /* 풀이 해설 모달 */
     #solutionModal { display: none; }
-    .solution-modal-box {
-      max-width: 950px;
-      width: 95%;
-      padding: 25px;
-      text-align: left;
-    }
-    .solution-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      margin: 15px 0 20px;
-    }
-    @media (max-width: 768px) {
-      .solution-grid { grid-template-columns: 1fr; }
-    }
-    .sol-left-panel {
-      background: #fafbfc;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-    }
-    .sol-right-panel {
+    .solution-box {
       background: #f8fafc;
-      border-left: 4px solid var(--wrong);
-      border: 1px solid var(--border);
-      border-left-width: 5px;
-      border-left-color: var(--wrong);
+      border-left: 5px solid var(--wrong);
       border-radius: 8px;
-      padding: 18px;
-      font-size: 0.96rem;
+      padding: 20px;
+      margin: 15px 0 20px;
+      text-align: left;
+      font-size: 1rem;
       line-height: 1.8;
       color: #2d3748;
-      overflow-y: auto;
-      max-height: 480px;
-    }
-    .panel-title {
-      font-weight: bold;
-      font-size: 1.05rem;
-      color: var(--primary);
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
     }
     .solution-ans {
       background: #fff5f5;
-      padding: 8px 12px;
+      padding: 10px 14px;
       border-radius: 6px;
       font-weight: bold;
       color: var(--wrong);
       font-size: 1.15rem;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
       display: inline-block;
-      border: 1px solid #fed7d7;
     }
 
     /* 상장 디자인 */
@@ -175,6 +139,7 @@
   <header>
     <div class="top-bar">
       <div>
+        <!-- 이스터에그: 타이틀 5번 클릭 시 관리자 인증 -->
         <h1 onclick="handleSecretClick()" title="수학 스피드 챌린지">🔥 수학 스피드 챌린지</h1>
         <small id="userHeaderName" style="color: #718096;">학생 모드</small>
       </div>
@@ -215,7 +180,7 @@
     <h2 style="margin-top:0; color:#2b6cb0;">수학 스피드 챌린지 시작</h2>
     <p style="color:#666; font-size:0.95rem; margin-bottom: 15px;">
       학년, 반, 번호와 이름을 선택한 후 시간을 설정하세요.<br>
-      문제당 <strong>3번의 기회</strong>가 주어지며 <strong>3회 오답 시 시간이 일시정지되고 문제와 풀이가 좌우로 나란히 제공</strong>됩니다!
+      문제당 <strong>3번의 기회</strong>가 주어지며 <strong>3회 실패 시 시간이 일시정지되고 상세 풀이</strong>가 제공됩니다!
     </p>
     <label style="font-weight:bold; font-size:0.95rem; color:#4a5568;">학생 정보 선택</label>
     <div class="student-select-row">
@@ -244,41 +209,24 @@
   </div>
 </div>
 
-<!-- [개선] 3회 오답 시 시간 정지 및 좌우 분할 풀이 학습 모달 -->
+<!-- 3회 오답 시 시간 정지 및 정답/풀이 학습 모달 -->
 <div class="modal" id="solutionModal">
-  <div class="modal-box solution-modal-box">
-    <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:2px solid var(--border); padding-bottom:10px;">
-      <div style="display:flex; align-items:center; gap:8px; color:var(--wrong);">
-        <span style="font-size:1.6rem;">⏸️</span>
-        <h2 style="margin:0; font-size:1.35rem;">시간 정지! 오답 점검 & 단계별 풀이</h2>
-      </div>
-      <span style="font-size:0.9rem; color:#718096;">* 풀이를 확인하는 동안 제한시간이 흐르지 않습니다.</span>
+  <div class="modal-box" style="max-width: 620px;">
+    <div style="display:flex; align-items:center; justify-content:center; gap:8px; color:var(--wrong);">
+      <span style="font-size:1.8rem;">⏸️</span>
+      <h2 style="margin:0;">시간 정지! 풀이 확인 학습</h2>
+    </div>
+    <p style="color:#718096; font-size:0.95rem; margin-top:6px;">
+      3번 오답으로 시간이 잠시 멈췄습니다. 왜 틀렸는지 풀이 과정을 꼼꼼히 확인하고 다음 문제로 넘어가세요!
+    </p>
+
+    <div class="solution-box">
+      <div class="solution-ans" id="solModalAns">정답: 0</div>
+      <div id="solModalText">풀이 설명이 들어갑니다.</div>
     </div>
 
-    <!-- 좌우 분할 그리드 -->
-    <div class="solution-grid">
-      <!-- 왼쪽: 문제 및 도형 -->
-      <div class="sol-left-panel">
-        <div class="panel-title">
-          <span>📌 틀린 문항 다시보기</span>
-          <span class="badge-type" id="solModalType" style="font-size:0.75rem;">유형</span>
-        </div>
-        <div id="solModalProblemText" style="font-size:0.98rem; font-weight:500; margin-bottom:10px; word-break:keep-all;"></div>
-        <div id="solModalFig" style="display:flex; justify-content:center; align-items:center; background:#ffffff; border-radius:6px; border:1px solid #edf2f7; padding:10px; min-height:180px;"></div>
-      </div>
-
-      <!-- 오른쪽: 정답 및 단계별 풀이 해설 -->
-      <div class="sol-right-panel">
-        <div class="panel-title" style="color:var(--wrong);">
-          <span>💡 정답 및 핵심 풀이 과정</span>
-        </div>
-        <div class="solution-ans" id="solModalAns">정답: 0</div>
-        <div id="solModalText">풀이 설명이 들어갑니다.</div>
-      </div>
-    </div>
-
-    <button style="width: 100%; padding: 13px; font-size: 1.1rem; background: var(--primary);" onclick="closeSolutionAndContinue()">
-      풀이를 모두 이해했습니다! (시간 재개 및 다음 문제) ➔
+    <button style="width: 100%; padding: 14px; font-size: 1.15rem; background: var(--primary);" onclick="closeSolutionAndContinue()">
+      풀이를 이해했습니다! (시간 재개 및 다음 문제) ➔
     </button>
   </div>
 </div>
@@ -378,11 +326,16 @@
 </div>
 
 <script>
+// ==============================================================================
+// 1. Google Apps Script 연동 URL 적용 완료
+// ==============================================================================
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzGs2rSLdk8NvIUJeJdDDoTUmLLjFq-YzZyT1VVVurAuqyk7l6Km9AM-lIocumuXzYD/exec";
+
 // --- 전역 변수 관리 ---
 let totalMinutes = 20;
 let remainingSec = 20 * 60;
 let timerId = null;
-let isPaused = false;
+let isPaused = false; // 타이머 일시정지 플래그
 let currentScore = 0;
 let totalAttempts = 0;
 let correctCount = 0;
@@ -434,19 +387,15 @@ const generators = [
     return {
       type: "이등변삼각형의 성질", unit: "°", ans: ans,
       text: `그림과 같이 <strong>선분 AB = 선분 AC</strong>인 이등변삼각형 ABC가 있다. 변 BA의 연장선 위에 점 D를 잡아 <strong>선분 AC = 선분 CD</strong>가 되도록 하였다. 변 BC의 연장선 위의 한 점을 E라 할 때, <strong>각 B = ${angleB}°</strong>이다. <strong>각 DCE</strong>의 크기를 구하시오.`,
-      svg: `<svg width="340" height="180" viewBox="0 0 400 200"><line x1="${Bx}" y1="${By}" x2="${Ex}" y2="${Ey}" stroke="#2d3748" stroke-width="2"/><line x1="${Bx}" y1="${By}" x2="${Ax}" y2="${Ay}" stroke="#2d3748" stroke-width="2"/><line x1="${Ax}" y1="${Ay}" x2="${Cx}" y2="${Cy}" stroke="#2d3748" stroke-width="2"/><line x1="${Ax}" y1="${Ay}" x2="${Dx}" y2="${Dy}" stroke="#718096" stroke-dasharray="3,3" stroke-width="1.8"/><line x1="${Dx}" y1="${Dy}" x2="${Cx}" y2="${Cy}" stroke="#2d3748" stroke-width="2"/><circle cx="${Bx}" cy="${By}" r="3" fill="#2d3748"/><text x="${Bx - 15}" y="${By + 5}">B</text><circle cx="${Ax}" cy="${Ay}" r="3" fill="#2d3748"/><text x="${Ax - 15}" y="${Ay - 5}">A</text><circle cx="${Cx}" cy="${Cy}" r="3" fill="#2d3748"/><text x="${Cx}" y="${Cy + 20}">C</text><circle cx="${Dx}" cy="${Dy}" r="3" fill="#2d3748"/><text x="${Dx + 8}" y="${Dy + 5}">D</text><circle cx="${Ex}" cy="${Ey}" r="3" fill="#2d3748"/><text x="${Ex + 5}" y="${Ey + 5}">E</text><text x="${Bx + 28}" y="${By - 8}" font-size="12" fill="#c53030" font-weight="bold">${angleB}°</text><text x="${Cx + 15}" y="${Cy - 8}" font-size="12" fill="#2b6cb0" font-weight="bold">? (∠DCE)</text></svg>`,
+      svg: `<svg width="400" height="200" viewBox="0 0 400 200"><line x1="${Bx}" y1="${By}" x2="${Ex}" y2="${Ey}" stroke="#2d3748" stroke-width="2"/><line x1="${Bx}" y1="${By}" x2="${Ax}" y2="${Ay}" stroke="#2d3748" stroke-width="2"/><line x1="${Ax}" y1="${Ay}" x2="${Cx}" y2="${Cy}" stroke="#2d3748" stroke-width="2"/><line x1="${Ax}" y1="${Ay}" x2="${Dx}" y2="${Dy}" stroke="#718096" stroke-dasharray="3,3" stroke-width="1.8"/><line x1="${Dx}" y1="${Dy}" x2="${Cx}" y2="${Cy}" stroke="#2d3748" stroke-width="2"/><circle cx="${Bx}" cy="${By}" r="3" fill="#2d3748"/><text x="${Bx - 15}" y="${By + 5}">B</text><circle cx="${Ax}" cy="${Ay}" r="3" fill="#2d3748"/><text x="${Ax - 15}" y="${Ay - 5}">A</text><circle cx="${Cx}" cy="${Cy}" r="3" fill="#2d3748"/><text x="${Cx}" y="${Cy + 20}">C</text><circle cx="${Dx}" cy="${Dy}" r="3" fill="#2d3748"/><text x="${Dx + 8}" y="${Dy + 5}">D</text><circle cx="${Ex}" cy="${Ey}" r="3" fill="#2d3748"/><text x="${Ex + 5}" y="${Ey + 5}">E</text><text x="${Bx + 28}" y="${By - 8}" font-size="12" fill="#c53030" font-weight="bold">${angleB}°</text><text x="${Cx + 15}" y="${Cy - 8}" font-size="12" fill="#2b6cb0" font-weight="bold">? (∠DCE)</text></svg>`,
       solution: `
-        <strong>1단계: 밑각의 성질</strong><br>
-        삼각형 ABC는 선분 AB = 선분 AC인 이등변삼각형이므로 두 밑각의 크기가 같습니다.<br>
-        따라서 <strong>각 ACB = 각 B = ${angleB}°</strong> 입니다.<br><br>
-        <strong>2단계: 삼각형의 외각</strong><br>
-        삼각형 ABC에서 한 외각의 크기는 이웃하지 않는 두 내각의 합과 같으므로<br>
-        <strong>각 CAD = 각 B + 각 ACB = ${angleB}° + ${angleB}° = ${angleB * 2}°</strong> 입니다.<br><br>
-        <strong>3단계: 이등변삼각형과 최종 외각</strong><br>
-        삼각형 CAD는 선분 AC = 선분 CD인 이등변삼각형이므로<br>
-        <strong>각 ADC = 각 CAD = ${angleB * 2}°</strong> 입니다.<br>
-        따라서 큰 삼각형 BCD에서 외각의 성질을 적용하면:<br>
-        <strong>각 DCE = 각 B + 각 D = ${angleB}° + ${angleB * 2}° = ${ans}°</strong> 입니다.
+        <strong>1단계:</strong> 삼각형 ABC는 선분 AB = 선분 AC인 이등변삼각형이므로 두 밑각의 크기가 같습니다.<br>
+        따라서 <strong>각 ACB = 각 B = ${angleB}°</strong> 입니다.<br>
+        <strong>2단계:</strong> 삼각형 ABC에서 외각의 성질에 의해<br>
+        각 CAD = 각 B + 각 ACB = ${angleB}° + ${angleB}° = <strong>${angleB * 2}°</strong> 입니다.<br>
+        <strong>3단계:</strong> 삼각형 CAD는 선분 AC = 선분 CD인 이등변삼각형이므로 밑각 각 ADC = 각 CAD = ${angleB * 2}° 입니다.<br>
+        따라서 큰 삼각형 BCD에서 외각의 성질에 의해:<br>
+        <strong>각 DCE = 각 B + 각 D = ${angleB}° + ${angleB * 2}° = ${ans}°</strong> 가 됩니다.
       `
     };
   },
@@ -458,16 +407,14 @@ const generators = [
     return {
       type: "이등변삼각형이 되기 위한 조건", unit: "", ans: x,
       text: `그림과 같은 삼각형 ABC가 <strong>선분 AB = 선분 AC</strong>인 이등변삼각형이 되기 위한 <strong>x</strong>의 값을 구하시오. (단, <strong>각 B = (2x + ${b2})°</strong>, <strong>각 C = (3x + ${b1})°</strong>)`,
-      svg: `<svg width="260" height="160" viewBox="0 0 300 180"><polygon points="${Ax},${Ay} ${Bx},${By} ${Cx},${Cy}" fill="none" stroke="#2d3748" stroke-width="2"/><text x="${Ax - 5}" y="${Ay - 8}">A</text><text x="${Bx - 16}" y="${By + 8}">B</text><text x="${Cx + 6}" y="${By + 8}">C</text><text x="${Bx + 10}" y="${By - 8}" font-size="11" fill="#2b6cb0" font-weight="bold">(2x + ${b2})°</text><text x="${Cx - 70}" y="${By - 8}" font-size="11" fill="#2b6cb0" font-weight="bold">(3x + ${b1})°</text></svg>`,
+      svg: `<svg width="300" height="180" viewBox="0 0 300 180"><polygon points="${Ax},${Ay} ${Bx},${By} ${Cx},${Cy}" fill="none" stroke="#2d3748" stroke-width="2"/><text x="${Ax - 5}" y="${Ay - 8}">A</text><text x="${Bx - 16}" y="${By + 8}">B</text><text x="${Cx + 6}" y="${By + 8}">C</text><text x="${Bx + 10}" y="${By - 8}" font-size="11" fill="#2b6cb0" font-weight="bold">(2x + ${b2})°</text><text x="${Cx - 70}" y="${By - 8}" font-size="11" fill="#2b6cb0" font-weight="bold">(3x + ${b1})°</text></svg>`,
       solution: `
-        <strong>1단계: 이등변삼각형의 밑각 조건</strong><br>
-        삼각형 ABC가 선분 AB = 선분 AC인 이등변삼각형이 되려면 두 밑각의 크기가 서로 같아야 합니다.<br>
-        즉, <strong>각 B = 각 C</strong> 이어야 합니다.<br><br>
-        <strong>2단계: 일차방정식 세우기</strong><br>
-        주어진 각의 식을 같다고 놓으면:<br>
-        <strong>2x + ${b2} = 3x + ${b1}</strong><br><br>
-        <strong>3단계: 이항하여 해 구하기</strong><br>
-        3x - 2x = ${b2} - ${b1}<br>
+        <strong>1단계:</strong> 삼각형 ABC가 선분 AB = 선분 AC인 이등변삼각형이 되려면 두 밑각의 크기가 서로 같아야 합니다.<br>
+        즉, <strong>각 B = 각 C</strong> 입니다.<br>
+        <strong>2단계:</strong> 주어진 식을 등식으로 세우면:<br>
+        2x + ${b2} = 3x + ${b1}<br>
+        <strong>3단계:</strong> 이항하여 정리하면:<br>
+        3x - 2x = ${b2} - ${b1} 이므로<br>
         따라서 <strong>x = ${x}</strong> 입니다.
       `
     };
@@ -482,19 +429,16 @@ const generators = [
     return {
       type: "직각삼각형의 합동 응용", unit: "°", ans: ans,
       text: `그림과 같이 <strong>각 B = 90°</strong>인 직각삼각형 ABC에서 변 AC 위의 점 E에 대하여 <strong>선분 AB = 선분 AE</strong>이고, 변 AC와 선분 DE는 수직이다. <strong>각 BAD = ${angleBAD}°</strong>일 때, <strong>각 C</strong>의 크기를 구하시오.`,
-      svg: `<svg width="270" height="170" viewBox="0 0 320 200"><polygon points="${Ax},${Ay} ${Bx},${By} ${Cx},${Cy}" fill="none" stroke="#2d3748" stroke-width="2"/><line x1="${Ax}" y1="${Ay}" x2="${Dx}" y2="${Dy}" stroke="#2d3748" stroke-width="1.8"/><line x1="${Dx}" y1="${Dy}" x2="${Ex}" y2="${Ey}" stroke="#2d3748" stroke-width="1.8"/><text x="${Ax - 15}" y="${Ay}">A</text><text x="${Bx - 15}" y="${By + 5}">B</text><text x="${Cx + 5}" y="${Cy + 5}">C</text><text x="${Dx - 3}" y="${Dy + 18}">D</text><text x="${Ex + 8}" y="${Ey}">E</text><rect x="${Bx}" y="${By - 14}" width="14" height="14" fill="none" stroke="#2d3748"/><text x="${Ax + 4}" y="${Ay + 36}" font-size="11" fill="#c53030" font-weight="bold">${angleBAD}°</text><text x="${Cx - 35}" y="${Cy - 8}" font-size="12" fill="#2b6cb0" font-weight="bold">? (∠C)</text></svg>`,
+      svg: `<svg width="320" height="200" viewBox="0 0 320 200"><polygon points="${Ax},${Ay} ${Bx},${By} ${Cx},${Cy}" fill="none" stroke="#2d3748" stroke-width="2"/><line x1="${Ax}" y1="${Ay}" x2="${Dx}" y2="${Dy}" stroke="#2d3748" stroke-width="1.8"/><line x1="${Dx}" y1="${Dy}" x2="${Ex}" y2="${Ey}" stroke="#2d3748" stroke-width="1.8"/><text x="${Ax - 15}" y="${Ay}">A</text><text x="${Bx - 15}" y="${By + 5}">B</text><text x="${Cx + 5}" y="${Cy + 5}">C</text><text x="${Dx - 3}" y="${Dy + 18}">D</text><text x="${Ex + 8}" y="${Ey}">E</text><rect x="${Bx}" y="${By - 14}" width="14" height="14" fill="none" stroke="#2d3748"/><text x="${Ax + 4}" y="${Ay + 36}" font-size="11" fill="#c53030" font-weight="bold">${angleBAD}°</text><text x="${Cx - 35}" y="${Cy - 8}" font-size="12" fill="#2b6cb0" font-weight="bold">? (∠C)</text></svg>`,
       solution: `
-        <strong>1단계: 직각삼각형의 합동(RHS) 증명</strong><br>
-        직각삼각형 ABD와 직각삼각형 AED에서,<br>
+        <strong>1단계:</strong> 직각삼각형 ABD와 직각삼각형 AED를 비교합니다.<br>
         - 각 B = 각 AED = 90° (직각, R)<br>
-        - 빗변 AD는 공통 (H)<br>
-        - 선분 AB = 선분 AE (주어진 한 변, S)<br>
-        따라서 <strong>삼각형 ABD ≡ 삼각형 AED (RHS 합동)</strong>입니다.<br><br>
-        <strong>2단계: 꼭지각 A의 크기</strong><br>
-        합동이므로 대응각의 크기가 같습니다. 즉, 각 EAD = 각 BAD = ${angleBAD}°.<br>
-        따라서 <strong>각 BAC = ${angleBAD}° × 2 = ${angleBAC}°</strong> 입니다.<br><br>
-        <strong>3단계: 각 C 구하기</strong><br>
-        직각삼각형 ABC에서 두 예각의 합은 90°이므로<br>
+        - 선분 AD는 공통 빗변 (H)<br>
+        - 선분 AB = 선분 AE (한 변, S)<br>
+        따라서 <strong>삼각형 ABD ≡ 삼각형 AED (RHS 합동)</strong>입니다.<br>
+        <strong>2단계:</strong> 합동에 의해 각 EAD = 각 BAD = ${angleBAD}° 입니다.<br>
+        따라서 꼭지각 <strong>각 BAC = ${angleBAD}° × 2 = ${angleBAC}°</strong> 입니다.<br>
+        <strong>3단계:</strong> 직각삼각형 ABC에서 각 C = 90° - 각 BAC 이므로<br>
         <strong>각 C = 90° - ${angleBAC}° = ${ans}°</strong> 입니다.
       `
     };
@@ -507,17 +451,14 @@ const generators = [
     return {
       type: "삼각형의 외심의 성질", unit: "°", ans: ans,
       text: `그림에서 점 O는 삼각형 ABC의 외심이다. <strong>선분 AB = 선분 AC</strong>이고 <strong>각 A = ${angleA}°</strong>일 때, <strong>각 OBC</strong>의 크기를 구하시오.`,
-      svg: `<svg width="250" height="170" viewBox="0 0 300 200"><polygon points="${Ax},${Ay} ${Bx},${By} ${Cx},${Cy}" fill="none" stroke="#2d3748" stroke-width="2"/><line x1="${Ox}" y1="${Oy}" x2="${Bx}" y2="${By}" stroke="#2b6cb0" stroke-width="1.8"/><line x1="${Ox}" y1="${Oy}" x2="${Cx}" y2="${Cy}" stroke="#2b6cb0" stroke-width="1.8"/><circle cx="${Ox}" cy="${Oy}" r="3" fill="#2d3748"/><text x="${Ax - 5}" y="${Ay - 8}">A</text><text x="${Bx - 15}" y="${By + 10}">B</text><text x="${Cx + 6}" y="${Cy + 10}">C</text><text x="${Ox + 6}" y="${Oy - 4}">O</text><text x="${Ax - 10}" y="${Ay + 30}" font-size="11" fill="#c53030" font-weight="bold">${angleA}°</text><text x="${Bx + 20}" y="${By - 6}" font-size="12" fill="#2b6cb0" font-weight="bold">?</text></svg>`,
+      svg: `<svg width="300" height="200" viewBox="0 0 300 200"><polygon points="${Ax},${Ay} ${Bx},${By} ${Cx},${Cy}" fill="none" stroke="#2d3748" stroke-width="2"/><line x1="${Ox}" y1="${Oy}" x2="${Bx}" y2="${By}" stroke="#2b6cb0" stroke-width="1.8"/><line x1="${Ox}" y1="${Oy}" x2="${Cx}" y2="${Cy}" stroke="#2b6cb0" stroke-width="1.8"/><circle cx="${Ox}" cy="${Oy}" r="3" fill="#2d3748"/><text x="${Ax - 5}" y="${Ay - 8}">A</text><text x="${Bx - 15}" y="${By + 10}">B</text><text x="${Cx + 6}" y="${Cy + 10}">C</text><text x="${Ox + 6}" y="${Oy - 4}">O</text><text x="${Ax - 10}" y="${Ay + 30}" font-size="11" fill="#c53030" font-weight="bold">${angleA}°</text><text x="${Bx + 20}" y="${By - 6}" font-size="12" fill="#2b6cb0" font-weight="bold">?</text></svg>`,
       solution: `
-        <strong>1단계: 외심의 중심각 성질</strong><br>
-        점 O가 외심일 때 꼭지각과 중심각 사이의 관계에 의해<br>
-        <strong>각 BOC = 2 × 각 A = 2 × ${angleA}° = ${angleA * 2}°</strong> 입니다.<br><br>
-        <strong>2단계: 외심의 기본 성질(반지름)</strong><br>
-        외심에서 세 꼭짓점에 이르는 거리는 모두 같으므로 <strong>선분 OB = 선분 OC</strong> 입니다.<br>
-        따라서 삼각형 OBC는 꼭지각이 각 BOC인 이등변삼각형이 됩니다.<br><br>
-        <strong>3단계: 밑각 각 OBC 계산</strong><br>
-        이등변삼각형의 두 밑각은 크기가 같으므로:<br>
-        <strong>각 OBC = (180° - ${angleA * 2}°) ÷ 2 = ${ans}°</strong> 입니다.
+        <strong>1단계:</strong> 점 O가 외심이므로 중심각과 원주각의 관계에 의해<br>
+        <strong>각 BOC = 2 × 각 A = 2 × ${angleA}° = ${angleA * 2}°</strong> 입니다.<br>
+        <strong>2단계:</strong> 외심에서 세 꼭짓점에 이르는 거리는 같으므로 <strong>선분 OB = 선분 OC</strong> 입니다.<br>
+        따라서 삼각형 OBC는 꼭지각이 각 BOC인 이등변삼각형입니다.<br>
+        <strong>3단계:</strong> 밑각인 각 OBC의 크기는:<br>
+        각 OBC = (180° - 각 BOC) ÷ 2 = (180° - ${angleA * 2}°) ÷ 2 = <strong>${ans}°</strong> 입니다.
       `
     };
   },
@@ -530,19 +471,15 @@ const generators = [
     return {
       type: "평행사변형과 이등변삼각형", unit: "cm", ans: ans,
       text: `그림과 같은 <strong>평행사변형 ABCD</strong>에서 <strong>선분 AB = ${ab}cm</strong>, <strong>선분 AD = ${ad}cm</strong>이다. 각 A와 각 D의 이등분선이 변 BC와 만나는 점을 각각 E, F라고 할 때, <strong>선분 EF</strong>의 길이를 구하시오.`,
-      svg: `<svg width="290" height="150" viewBox="0 0 340 170"><polygon points="${Ax},${Ay} ${Dx},${Dy} ${Cx},${Cy} ${Bx},${By}" fill="none" stroke="#2d3748" stroke-width="2"/><line x1="${Ax}" y1="${Ay}" x2="${Ex}" y2="${Ey}" stroke="#2b6cb0" stroke-width="1.8"/><line x1="${Dx}" y1="${Dy}" x2="${Fx}" y2="${Fy}" stroke="#2b6cb0" stroke-width="1.8"/><text x="${Ax - 5}" y="${Ay - 8}">A</text><text x="${Dx + 5}" y="${Dy - 8}">D</text><text x="${Bx - 15}" y="${By + 5}">B</text><text x="${Cx + 6}" y="${Cy + 5}">C</text><text x="${Fx - 5}" y="${Fy + 18}">F</text><text x="${Ex - 5}" y="${Ey + 18}">E</text><text x="${(Ax+Bx)/2 - 25}" y="${(Ay+By)/2}">${ab}cm</text><text x="${(Ax+Dx)/2 - 15}" y="${Ay - 8}">${ad}cm</text></svg>`,
+      svg: `<svg width="340" height="170" viewBox="0 0 340 170"><polygon points="${Ax},${Ay} ${Dx},${Dy} ${Cx},${Cy} ${Bx},${By}" fill="none" stroke="#2d3748" stroke-width="2"/><line x1="${Ax}" y1="${Ay}" x2="${Ex}" y2="${Ey}" stroke="#2b6cb0" stroke-width="1.8"/><line x1="${Dx}" y1="${Dy}" x2="${Fx}" y2="${Fy}" stroke="#2b6cb0" stroke-width="1.8"/><text x="${Ax - 5}" y="${Ay - 8}">A</text><text x="${Dx + 5}" y="${Dy - 8}">D</text><text x="${Bx - 15}" y="${By + 5}">B</text><text x="${Cx + 6}" y="${Cy + 5}">C</text><text x="${Fx - 5}" y="${Fy + 18}">F</text><text x="${Ex - 5}" y="${Ey + 18}">E</text><text x="${(Ax+Bx)/2 - 25}" y="${(Ay+By)/2}">${ab}cm</text><text x="${(Ax+Dx)/2 - 15}" y="${Ay - 8}">${ad}cm</text></svg>`,
       solution: `
-        <strong>1단계: 엇각과 이등변삼각형 발견</strong><br>
-        선분 AD // 선분 BC이므로 엇각의 크기는 같습니다.<br>
-        각 BAE = 각 DAE = 각 BEA(엇각) 이므로<br>
-        삼각형 ABE는 이등변삼각형이며, <strong>선분 BE = 선분 AB = ${ab}cm</strong> 입니다.<br><br>
-        <strong>2단계: 오른쪽 삼각형 DCF</strong><br>
-        마찬가지로 선분 DF가 각 D의 이등분선이므로 삼각형 DCF도 이등변삼각형입니다.<br>
-        따라서 <strong>선분 CF = 선분 CD = ${ab}cm</strong> 입니다.<br><br>
-        <strong>3단계: 겹쳐진 선분 EF의 길이</strong><br>
-        평행사변형에서 밑변 선분 BC = 선분 AD = ${ad}cm 이므로<br>
-        선분 EF = 선분 BE + 선분 CF - 선분 BC<br>
-        <strong>선분 EF = ${ab} + ${ab} - ${ad} = ${ans}cm</strong> 입니다.
+        <strong>1단계:</strong> 평행사변형에서 선분 AD // 선분 BC이므로 엇각의 크기가 같습니다.<br>
+        선분 AE가 각 A의 이등분선이므로 각 BAE = 각 DAE = 각 BEA(엇각).<br>
+        따라서 삼각형 ABE는 이등변삼각형이 되어 <strong>선분 BE = 선분 AB = ${ab}cm</strong> 입니다.<br>
+        <strong>2단계:</strong> 마찬가지로 선분 DF가 각 D의 이등분선이므로 삼각형 DCF도 이등변삼각형입니다.<br>
+        따라서 <strong>선분 CF = 선분 CD = 선분 AB = ${ab}cm</strong> 입니다.<br>
+        <strong>3단계:</strong> 변 BC = 선분 AD = ${ad}cm 이므로, 겹쳐진 선분 EF의 길이는:<br>
+        선분 EF = 선분 BE + 선분 CF - 선분 BC = ${ab} + ${ab} - ${ad} = <strong>${ans}cm</strong> 입니다.
       `
     };
   },
@@ -552,16 +489,14 @@ const generators = [
     return {
       type: "평행사변형 내부의 점과 넓이", unit: "㎠", ans: ans,
       text: `그림과 같이 <strong>평행사변형 ABCD</strong>의 내부에 한 점 P가 있다. <strong>삼각형 PAB의 넓이가 ${s1}㎠</strong>, <strong>삼각형 PCD의 넓이가 ${s2}㎠</strong>, <strong>삼각형 PBC의 넓이가 ${s3}㎠</strong>일 때, <strong>삼각형 PDA</strong>의 넓이를 구하시오.`,
-      svg: `<svg width="280" height="150" viewBox="0 0 320 165"><polygon points="55,20 270,20 225,140 10,140" fill="none" stroke="#2d3748" stroke-width="2"/><line x1="55" y1="20" x2="140" y2="75" stroke="#718096" stroke-width="1.5"/><line x1="270" y1="20" x2="140" y2="75" stroke="#718096" stroke-width="1.5"/><line x1="225" y1="140" x2="140" y2="75" stroke="#718096" stroke-width="1.5"/><line x1="10" y1="140" x2="140" y2="75" stroke="#718096" stroke-width="1.5"/><circle cx="140" cy="75" r="3.5" fill="#2d3748"/><text x="45" y="16">A</text><text x="275" y="16">D</text><text x="-5" y="148">B</text><text x="230" y="148">C</text><text x="146" y="75">P</text><text x="65" y="80" font-size="11" fill="#718096">${s1}</text><text x="185" y="80" font-size="11" fill="#718096">${s2}</text><text x="125" y="120" font-size="11" fill="#718096">${s3}</text><text x="125" y="42" font-size="12" fill="#2b6cb0" font-weight="bold">?</text></svg>`,
+      svg: `<svg width="320" height="165" viewBox="0 0 320 165"><polygon points="55,20 270,20 225,140 10,140" fill="none" stroke="#2d3748" stroke-width="2"/><line x1="55" y1="20" x2="140" y2="75" stroke="#718096" stroke-width="1.5"/><line x1="270" y1="20" x2="140" y2="75" stroke="#718096" stroke-width="1.5"/><line x1="225" y1="140" x2="140" y2="75" stroke="#718096" stroke-width="1.5"/><line x1="10" y1="140" x2="140" y2="75" stroke="#718096" stroke-width="1.5"/><circle cx="140" cy="75" r="3.5" fill="#2d3748"/><text x="45" y="16">A</text><text x="275" y="16">D</text><text x="-5" y="148">B</text><text x="230" y="148">C</text><text x="146" y="75">P</text><text x="65" y="80" font-size="11" fill="#718096">${s1}</text><text x="185" y="80" font-size="11" fill="#718096">${s2}</text><text x="125" y="120" font-size="11" fill="#718096">${s3}</text><text x="125" y="42" font-size="12" fill="#2b6cb0" font-weight="bold">?</text></svg>`,
       solution: `
-        <strong>1단계: 평행사변형 내부 점과 넓이 공식</strong><br>
-        평행사변형 내부의 임의의 점 P에 대해, 마주보는 삼각형 쌍의 넓이의 합은 전체 넓이의 1/2로 서로 같습니다.<br>
-        <strong>삼각형 PAB + 삼각형 PCD = 삼각형 PDA + 삼각형 PBC</strong><br><br>
-        <strong>2단계: 수치 대입</strong><br>
+        <strong>1단계:</strong> 평행사변형 내부의 한 점 P에 대하여 마주보는 삼각형 쌍의 넓이의 합은 항상 전체 평행사변형 넓이의 절반(1/2)으로 서로 같습니다.<br>
+        즉, <strong>삼각형 PAB + 삼각형 PCD = 삼각형 PDA + 삼각형 PBC</strong> 입니다.<br>
+        <strong>2단계:</strong> 주어진 수치를 대입하면:<br>
         ${s1} + ${s2} = 삼각형 PDA + ${s3}<br>
-        ${s1 + s2} = 삼각형 PDA + ${s3}<br><br>
-        <strong>3단계: 이항하여 넓이 계산</strong><br>
-        <strong>삼각형 PDA의 넓이 = ${s1 + s2} - ${s3} = ${ans}㎠</strong> 입니다.
+        ${s1 + s2} = 삼각형 PDA + ${s3}<br>
+        <strong>3단계:</strong> 따라서 <strong>삼각형 PDA의 넓이 = ${s1 + s2} - ${s3} = ${ans}㎠</strong> 입니다.
       `
     };
   }
@@ -670,33 +605,22 @@ function submitAnswer() {
     } else {
       totalAttempts++; typeStats[currentProb.type].attempts++;
       feedback.innerHTML = "";
-      
-      // 3회 실패 -> 시간 정지 및 좌우 2단 분할 풀이 모달 호출!
       showSolutionModal();
     }
   }
 }
 
-// [개선] 3회 실패 시 왼쪽(문제+도형), 오른쪽(정답+풀이) 모달 표시
 function showSolutionModal() {
-  pauseTimer(); // 시간 즉시 일시정지
-
-  // 왼쪽 패널: 문제 정보 세팅
-  document.getElementById('solModalType').innerText = currentProb.type;
-  document.getElementById('solModalProblemText').innerHTML = currentProb.text;
-  document.getElementById('solModalFig').innerHTML = currentProb.svg;
-
-  // 오른쪽 패널: 정답 및 단계별 해설 세팅
+  pauseTimer();
   document.getElementById('solModalAns').innerText = `정답: ${currentProb.ans}${currentProb.unit}`;
   document.getElementById('solModalText').innerHTML = currentProb.solution;
-
   document.getElementById('solutionModal').style.display = 'flex';
 }
 
 function closeSolutionAndContinue() {
   document.getElementById('solutionModal').style.display = 'none';
-  resumeTimer(); // 시간 재개
-  loadNextProblem(); // 다음 문제 출제
+  resumeTimer();
+  loadNextProblem();
 }
 
 function passProblem() {
@@ -759,6 +683,7 @@ function endGame() {
     commentBox.innerHTML = `🌟 <strong>맞춤 칭찬:</strong> 모든 유형에서 고르게 높은 정답률을 보였습니다. 중간고사에서도 훌륭한 결과가 기대됩니다!`;
   }
 
+  // 교사 기록 저장 및 구글 스프레드시트 실시간 전송
   saveRecordForTeacher({
     grade: curGrade, classNum: curClass, studentNum: curNum, name: curName,
     student: fullStudentLabel, score: currentScore, attempts: totalAttempts,
@@ -769,7 +694,8 @@ function endGame() {
   document.getElementById('certModal').style.display = 'flex';
 }
 
-// ================= 교사용 관리 시스템 =================
+// ================= [교사용 관리 시스템 - 구글 시트 연동 및 분석] =================
+
 async function sha256(message) {
   const msgBuffer = new TextEncoder().encode(message);
   const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
@@ -793,10 +719,27 @@ async function promptTeacherLogin() {
   const enteredPin = prompt("관리자 보안 PIN 번호를 입력하세요 (초기: 1234):");
   if (!enteredPin) return;
   const enteredHash = await sha256(enteredPin);
+  
   if (enteredHash === getStoredPinHash()) {
-    renderTeacherDashboard();
     document.getElementById('teacherDashboardModal').style.display = 'flex';
-  } else { alert("보안 인증에 실패하였습니다."); }
+    document.getElementById('teacherRecordsTableBody').innerHTML = 
+      `<tr><td colspan="8" style="padding:25px; color:#2b6cb0; text-align:center; font-weight:bold;">⏳ 구글 시트에서 전 학급 성적 데이터를 취합 중입니다...</td></tr>`;
+
+    // 구글 스프레드시트에서 원격 데이터 동기화
+    if (SCRIPT_URL && SCRIPT_URL.startsWith("https://script.google.com")) {
+      try {
+        const res = await fetch(SCRIPT_URL);
+        const serverRecords = await res.json();
+        localStorage.setItem('mathQuizClassRecords', JSON.stringify(serverRecords));
+      } catch (e) {
+        console.warn("온라인 취합 실패, 기기 내부 데이터로 표시합니다.", e);
+      }
+    }
+
+    renderTeacherDashboard();
+  } else {
+    alert("보안 인증에 실패하였습니다.");
+  }
 }
 
 async function changeTeacherPassword() {
@@ -817,10 +760,22 @@ function getStoredRecords() {
   return data ? JSON.parse(data) : [];
 }
 
+// 학생 기록 저장 및 구글 시트로 백그라운드 전송
 function saveRecordForTeacher(record) {
+  // 로컬 백업
   const records = getStoredRecords();
   records.push(record);
   localStorage.setItem('mathQuizClassRecords', JSON.stringify(records));
+
+  // 구글 스프레드시트 POST 요청
+  if (SCRIPT_URL && SCRIPT_URL.startsWith("https://script.google.com")) {
+    fetch(SCRIPT_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(record)
+    }).catch(err => console.error("구글 시트 전송 실패:", err));
+  }
 }
 
 function closeTeacherDashboard() { document.getElementById('teacherDashboardModal').style.display = 'none'; }
@@ -828,6 +783,7 @@ function closeTeacherDashboard() { document.getElementById('teacherDashboardModa
 function renderTeacherDashboard() {
   let allRecords = getStoredRecords();
   
+  // 회차(Attempt) 계산
   allRecords.sort((a, b) => a.timestamp - b.timestamp);
   let studentAttemptMap = {};
   allRecords.forEach(r => {
@@ -837,6 +793,7 @@ function renderTeacherDashboard() {
     r.attemptIdx = studentAttemptMap[key];
   });
 
+  // 반 필터 적용
   const classFilterVal = document.getElementById('teacherClassFilter').value;
   let filteredRecords = allRecords;
   if (classFilterVal !== "전체") {
@@ -856,6 +813,7 @@ function renderTeacherDashboard() {
     return;
   }
 
+  // 통계 집계
   let sumScore = 0, maxScore = 0;
   const weakCountMap = {};
   filteredRecords.forEach(r => {
@@ -874,6 +832,7 @@ function renderTeacherDashboard() {
   statMax.innerText = `${maxScore}점`;
   statWeak.innerText = mostWeakTopic.length > 9 ? mostWeakTopic.substring(0, 9) + '..' : mostWeakTopic;
 
+  // 번호순 -> 회차순 정렬
   filteredRecords.sort((a, b) => {
     let cA = parseInt(a.classNum) || 0, cB = parseInt(b.classNum) || 0;
     if (cA !== cB) return cA - cB;
@@ -893,7 +852,7 @@ function renderTeacherDashboard() {
         <td>${r.attempts} / ${r.correct}</td>
         <td>${r.accuracy}%</td>
         <td style="color:var(--wrong); font-size:0.8rem;">${r.weakest}</td>
-        <td style="font-size:0.8rem; color:#718096;">${r.time.substring(6)}</td>
+        <td style="font-size:0.8rem; color:#718096;">${r.time ? r.time.substring(6) : '-'}</td>
       </tr>
     `;
   });
@@ -927,6 +886,7 @@ function drawScoreTrendChart(records) {
 
   const paddingX = 60, paddingY = 40;
   const chartW = w - paddingX * 2, chartH = h - paddingY * 2;
+
   const maxScore = Math.max(100, ...chartData.map(d => d.avg));
   const yMaxScale = Math.ceil((maxScore * 1.2) / 50) * 50; 
 
