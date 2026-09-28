@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>학급 번호 무작위 추첨기</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Canvas Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Font: Pretendard/Noto Sans KR -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Noto Sans KR', 'sans-serif'],
+            display: ['Jua', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* 3D 버튼 효과 및 부드러운 애니메이션 */
+    .btn-3d {
+      transition: all 0.1s ease;
+      box-shadow: 0 6px 0 rgba(0, 0, 0, 0.2);
+    }
+    .btn-3d:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
+    }
+    .btn-primary-3d {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      box-shadow: 0 6px 0 #1d4ed8;
+    }
+    .btn-primary-3d:hover {
+      background: linear-gradient(135deg, #60a5fa, #3b82f6);
+    }
+    .btn-primary-3d:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #1d4ed8;
+    }
+    .btn-accent-3d {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      box-shadow: 0 6px 0 #b45309;
+    }
+    .btn-accent-3d:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #b45309;
+    }
+    /* 롤링 숫자 반짝임 효과 */
+    @keyframes pulse-glow {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.4)); }
+      50% { transform: scale(1.04); filter: drop-shadow(0 0 30px rgba(245, 158, 11, 0.7)); }
+    }
+    .rolling-active {
+      animation: pulse-glow 0.3s infinite ease-in-out;
+    }
+    /* 스크롤바 커스텀 */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col font-sans selection:bg-amber-300 selection:text-slate-900">
+
+  <!-- 헤더 영역 -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 py-3 sm:px-6 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="w-10 h-10 rounded-2xl bg-amber-400 text-amber-900 flex items-center justify-center font-display text-2xl shadow-inner">
+          <i class="fa-solid fa-dice"></i>
+        </span>
+        <div>
+          <h1 class="text-xl sm:text-2xl font-bold font-display tracking-tight text-slate-800 flex items-center gap-2">
+            학급 번호 무작위 추첨기
+            <span class="text-xs font-sans font-semibold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">중복 없음</span>
+          </h1>
+          <p class="text-xs text-slate-500 hidden sm:block">공정하고 즐거운 수업 활동을 위한 스마트 교실 도구</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <!-- 소리 켜기/끄기 토글 버튼 -->
+        <button id="soundToggleBtn" class="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition" title="효과음 On/Off">
+          <i id="soundIcon" class="fa-solid fa-volume-high text-emerald-600"></i>
+          <span id="soundText" class="hidden sm:inline">소리 켬</span>
+        </button>
+
+        <!-- 전체 초기화 버튼 -->
+        <button id="openResetModalBtn" class="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition">
+          <i class="fa-solid fa-arrow-rotate-right"></i>
+          <span class="hidden sm:inline">새로 시작</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-6 sm:px-6 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- 좌측 및 중앙: 추첨 스테이지 & 컨트롤 (8 컬럼) -->
+    <section class="lg:col-span-8 flex flex-col gap-5">
+
+      <!-- 번호 범위 및 추첨 속도 설정 바 -->
+      <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200 flex flex-col gap-4">
+        <!-- 1행: 번호 범위 설정 & 카운터 -->
+        <div class="flex flex-wrap items-center justify-between gap-4 pb-3 border-b border-slate-100">
+          <div class="flex flex-wrap items-center gap-3 sm:gap-4">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-bold text-slate-600">시작 번호:</span>
+              <input type="number" id="startNumInput" value="1" min="1" max="999" class="w-20 px-3 py-1.5 text-center font-bold text-slate-800 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+            <span class="text-slate-400 font-bold">~</span>
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-bold text-slate-600">끝 번호:</span>
+              <input type="number" id="endNumInput" value="25" min="1" max="999" class="w-24 px-3 py-1.5 text-center font-bold text-slate-800 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+            <button id="applyRangeBtn" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm rounded-xl transition shadow">
+              설정 적용
+            </button>
+          </div>
+
+          <!-- 남은 인원수 배지 -->
+          <div class="flex items-center gap-2 bg-slate-100 px-3.5 py-1.5 rounded-xl border border-slate-200">
+            <span class="text-xs font-semibold text-slate-500">남은 번호:</span>
+            <span id="remainingCount" class="font-extrabold text-blue-600 text-lg">25</span>
+            <span class="text-xs text-slate-400 font-medium">/ <span id="totalCount">25</span>명</span>
+          </div>
+        </div>
+
+        <!-- 2행: 추첨 소요 시간 조절 설정 -->
+        <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
+          <div class="flex items-center gap-2.5">
+            <span class="font-bold text-slate-700 flex items-center gap-1.5">
+              <i class="fa-solid fa-stopwatch text-amber-500"></i>
+              추첨 시간:
+            </span>
+            <span id="durationValueText" class="font-extrabold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-200 text-sm">
+              2.0초
+            </span>
+            <!-- 시간 조절 슬라이더 -->
+            <input type="range" id="durationSlider" min="0.3" max="5.0" step="0.1" value="2.0" class="w-28 sm:w-36 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+          </div>
+
+          <!-- 간편 프리셋 버튼 -->
+          <div class="flex items-center gap-1.5">
+            <button type="button" class="preset-btn px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 transition" data-sec="0.5">
+              ⚡ 초고속(0.5초)
+            </button>
+            <button type="button" class="preset-btn px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 transition" data-sec="1.5">
+              보통(1.5초)
+            </button>
+            <button type="button" class="preset-btn active-preset px-2.5 py-1 text-xs font-bold rounded-lg border border-blue-300 bg-blue-50 text-blue-700 transition" data-sec="2.0">
+              추천(2.0초)
+            </button>
+            <button type="button" class="preset-btn px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 transition" data-sec="3.5">
+              🔥 긴장감(3.5초)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 추첨 디스플레이 박스 -->
+      <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-md border-2 border-slate-200 flex flex-col items-center justify-center relative overflow-hidden min-h-[360px] sm:min-h-[420px]">
+        <!-- 배경 데코 패턴 -->
+        <div class="absolute inset-0 opacity-[0.03] pointer-events-none" style="background-image: radial-gradient(#000 1.5px, transparent 1.5px); background-size: 24px 24px;"></div>
+
+        <!-- 상태 안내 문구 -->
+        <div id="drawStatusBadge" class="mb-3 px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold tracking-wide uppercase bg-blue-50 text-blue-600 border border-blue-200 shadow-sm transition-all duration-300">
+          준비 완료! 아래 버튼이나 스페이스바를 누르세요
+        </div>
+
+        <!-- 메인 숫자 표시기 -->
+        <div class="relative w-full flex items-center justify-center my-4">
+          <div id="displayNumber" class="font-display text-8xl sm:text-9xl md:text-[11rem] font-black text-slate-800 tracking-tight transition-transform select-none drop-shadow-sm">
+            ?
+          </div>
+        </div>
+
+        <!-- 당첨 라벨 -->
+        <div id="pickedOrderLabel" class="h-6 text-sm font-bold text-amber-600 flex items-center gap-1.5 opacity-0 transition-opacity">
+          <i class="fa-solid fa-crown text-amber-500"></i>
+          <span id="orderText"></span>
+        </div>
+
+        <!-- 추첨 트리거 버튼 -->
+        <div class="mt-6 w-full max-w-sm flex flex-col gap-2 items-center">
+          <button id="drawBtn" class="w-full py-4 sm:py-5 rounded-2xl text-white font-display text-2xl sm:text-3xl btn-3d btn-primary-3d flex items-center justify-center gap-3 transition">
+            <i class="fa-solid fa-wand-magic-sparkles text-amber-300 animate-bounce"></i>
+            <span>번호 뽑기!</span>
+          </button>
+          <span class="text-xs text-slate-400 font-medium hidden sm:block">단축키: <b>Space bar</b> 키를 눌러도 뽑을 수 있습니다</span>
+        </div>
+      </div>
+
+      <!-- 전체 번호 현황판 (그리드 보드) -->
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+        <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-table-cells text-slate-500"></i>
+            <h2 class="font-bold text-slate-800 text-base sm:text-lg">전체 번호 현황판</h2>
+          </div>
+          <div class="flex items-center gap-4 text-xs font-medium text-slate-500">
+            <span class="flex items-center gap-1.5">
+              <span class="w-3 h-3 rounded bg-white border-2 border-slate-300 inline-block"></span> 미추첨
+            </span>
+            <span class="flex items-center gap-1.5">
+              <span class="w-3 h-3 rounded bg-slate-300 line-through inline-block"></span> 뽑힘
+            </span>
+            <span class="flex items-center gap-1.5">
+              <span class="w-3 h-3 rounded bg-amber-400 inline-block"></span> 직전 추첨
+            </span>
+          </div>
+        </div>
+
+        <!-- 번호 칩 컨테이너 -->
+        <div id="numbersGrid" class="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2 sm:gap-2.5 max-h-[280px] overflow-y-auto p-1">
+          <!-- JS에서 동적으로 생성됩니다 -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 우측: 당첨 기록 히스토리 (4 컬럼) -->
+    <section class="lg:col-span-4 flex flex-col gap-5">
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex-1 flex flex-col min-h-[500px]">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-list-ol text-blue-600"></i>
+            <h2 class="font-bold text-slate-800 text-base sm:text-lg">뽑힌 순서 기록</h2>
+          </div>
+          <span id="historyCountBadge" class="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full font-bold">0명 완료</span>
+        </div>
+
+        <!-- 히스토리 목록 -->
+        <div id="historyListContainer" class="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[580px]">
+          <!-- 빈 상태 안내 -->
+          <div id="emptyHistoryNotice" class="h-48 flex flex-col items-center justify-center text-center text-slate-400 p-4">
+            <i class="fa-regular fa-clipboard text-3xl mb-2 opacity-50"></i>
+            <p class="text-sm font-semibold">아직 추첨된 번호가 없습니다.</p>
+            <p class="text-xs text-slate-400 mt-1">번호를 뽑으면 순서대로 기록됩니다.</p>
+          </div>
+          <ul id="historyList" class="space-y-2"></ul>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 초기화 확인 모달 다이얼로그 -->
+  <div id="resetModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 transform transition-all text-center">
+      <div class="w-14 h-14 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <h3 class="text-xl font-bold font-display text-slate-800 mb-2">추첨을 새로 시작할까요?</h3>
+      <p class="text-sm text-slate-600 mb-6">
+        지금까지 뽑힌 모든 번호 기록이 초기화되고 처음부터 다시 시작합니다.
+      </p>
+      <div class="grid grid-cols-2 gap-3">
+        <button id="cancelResetBtn" class="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm transition">
+          취소
+        </button>
+        <button id="confirmResetBtn" class="py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-sm transition shadow-md shadow-rose-200">
+          초기화하기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 모든 번호 추첨 완료 모달 다이얼로그 -->
+  <div id="completeModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 transform transition-all text-center">
+      <div class="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+        <i class="fa-solid fa-champagne-glasses"></i>
+      </div>
+      <h3 class="text-2xl font-bold font-display text-slate-800 mb-2">모든 번호 추첨 완료!</h3>
+      <p class="text-sm text-slate-600 mb-6">
+        설정한 학급의 모든 번호가 중복 없이 전부 추첨되었습니다.
+      </p>
+      <div class="flex flex-col gap-2">
+        <button id="closeCompleteModalBtn" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm transition shadow-md">
+          확인
+        </button>
+        <button id="restartFromCompleteBtn" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm transition">
+          다시 처음부터 뽑기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* =========================================================
+     * 1. Web Audio API를 활용한 내장 사운드 엔진 (외부 링크 불필요)
+     * ========================================================= */
+    let audioCtx = null;
+    let isSoundEnabled = true;
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) {
+          audioCtx = new AudioContextClass();
+        }
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    // 롤링 셔플 틱(Tick) 사운드
+    function playTickSound() {
+      if (!isSoundEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'triangle';
+        // 경쾌하고 가벼운 틱 소리
+        osc.frequency.setValueAtTime(600 + Math.random() * 200, ctx.currentTime);
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start();
+        osc.stop(ctx.currentTime + 0.05);
+      } catch (e) {
+        console.warn('Audio error:', e);
+      }
+    }
+
+    // 최종 번호 당첨 팡파레 사운드 (아르페지오 코드)
+    function playFanfareSound() {
+      if (!isSoundEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+
+        // 경쾌한 C Major 코드 아르페지오: C5, E5, G5, C6
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, index) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+
+          osc.type = 'sine';
+          const startTime = ctx.currentTime + (index * 0.08);
+          osc.frequency.setValueAtTime(freq, startTime);
+
+          gain.gain.setValueAtTime(0.18, startTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.5);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(startTime);
+          osc.stop(startTime + 0.55);
+        });
+      } catch (e) {
+        console.warn('Fanfare error:', e);
+      }
+    }
+
+    /* =========================================================
+     * 2. 애플리케이션 상태(State) 관리
+     * ========================================================= */
+    let startNumber = 1;
+    let endNumber = 25;
+    let remainingNumbers = [];
+    let pickedNumbers = [];
+    let isDrawing = false;
+    let lastPicked = null;
+    let drawDuration = 2.0; // 기본 추첨 시간 (초 단위)
+
+    // DOM 요소 캐싱
+    const startNumInput = document.getElementById('startNumInput');
+    const endNumInput = document.getElementById('endNumInput');
+    const applyRangeBtn = document.getElementById('applyRangeBtn');
+    const remainingCountEl = document.getElementById('remainingCount');
+    const totalCountEl = document.getElementById('totalCount');
+    const displayNumberEl = document.getElementById('displayNumber');
+    const drawBtn = document.getElementById('drawBtn');
+    const drawStatusBadge = document.getElementById('drawStatusBadge');
+    const pickedOrderLabel = document.getElementById('pickedOrderLabel');
+    const orderTextEl = document.getElementById('orderText');
+    const numbersGrid = document.getElementById('numbersGrid');
+    const historyList = document.getElementById('historyList');
+    const emptyHistoryNotice = document.getElementById('emptyHistoryNotice');
+    const historyCountBadge = document.getElementById('historyCountBadge');
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const soundIcon = document.getElementById('soundIcon');
+    const soundText = document.getElementById('soundText');
+
+    // 시간 설정 DOM
+    const durationSlider = document.getElementById('durationSlider');
+    const durationValueText = document.getElementById('durationValueText');
+    const presetButtons = document.querySelectorAll('.preset-btn');
+
+    // 모달 DOM
+    const resetModal = document.getElementById('resetModal');
+    const openResetModalBtn = document.getElementById('openResetModalBtn');
+    const cancelResetBtn = document.getElementById('cancelResetBtn');
+    const confirmResetBtn = document.getElementById('confirmResetBtn');
+    const completeModal = document.getElementById('completeModal');
+    const closeCompleteModalBtn = document.getElementById('closeCompleteModalBtn');
+    const restartFromCompleteBtn = document.getElementById('restartFromCompleteBtn');
+
+    /* =========================================================
+     * 3. 추첨기 초기화 및 상태 갱신 함수
+     * ========================================================= */
+    function initLottery(start, end) {
+      if (start > end) {
+        const temp = start;
+        start = end;
+        end = temp;
+        startNumInput.value = start;
+        endNumInput.value = end;
+      }
+
+      startNumber = start;
+      endNumber = end;
+
+      // 전체 번호 배열 생성
+      remainingNumbers = [];
+      for (let i = startNumber; i <= endNumber; i++) {
+        remainingNumbers.push(i);
+      }
+
+      pickedNumbers = [];
+      lastPicked = null;
+
+      // UI 초기화
+      displayNumberEl.textContent = '?';
+      displayNumberEl.classList.remove('text-amber-500', 'text-blue-600', 'rolling-active');
+      displayNumberEl.classList.add('text-slate-800');
+      
+      pickedOrderLabel.classList.add('opacity-0');
+      drawStatusBadge.textContent = '준비 완료! 아래 버튼이나 스페이스바를 누르세요';
+      drawStatusBadge.className = 'mb-3 px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold tracking-wide uppercase bg-blue-50 text-blue-600 border border-blue-200 shadow-sm transition-all duration-300';
+
+      updateCounters();
+      renderGrid();
+      renderHistory();
+      checkDrawButtonState();
+    }
+
+    function updateCounters() {
+      const total = (endNumber - startNumber + 1);
+      remainingCountEl.textContent = remainingNumbers.length;
+      totalCountEl.textContent = total;
+      historyCountBadge.textContent = `${pickedNumbers.length}명 완료`;
+    }
+
+    function checkDrawButtonState() {
+      if (remainingNumbers.length === 0) {
+        drawBtn.disabled = true;
+        drawBtn.classList.remove('btn-primary-3d');
+        drawBtn.classList.add('bg-slate-300', 'text-slate-500', 'cursor-not-allowed', 'shadow-none');
+        drawBtn.innerHTML = '<i class="fa-solid fa-flag-checkered"></i> <span>모두 추첨 완료</span>';
+      } else {
+        drawBtn.disabled = false;
+        drawBtn.classList.remove('bg-slate-300', 'text-slate-500', 'cursor-not-allowed', 'shadow-none');
+        drawBtn.classList.add('btn-primary-3d');
+        drawBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles text-amber-300 animate-bounce"></i> <span>번호 뽑기!</span>';
+      }
+    }
+
+    /* =========================================================
+     * 4. 그리드 보드 및 히스토리 렌더링
+     * ========================================================= */
+    function renderGrid() {
+      numbersGrid.innerHTML = '';
+      const total = endNumber - startNumber + 1;
+
+      for (let i = startNumber; i <= endNumber; i++) {
+        const item = document.createElement('div');
+        const isPicked = pickedNumbers.includes(i);
+        const isLatest = lastPicked === i;
+
+        item.id = `grid-num-${i}`;
+        item.textContent = i;
+        
+        // 스타일 클래스 지정
+        let baseClass = "h-11 sm:h-12 flex items-center justify-center font-bold text-base sm:text-lg rounded-xl transition duration-200 select-none border ";
+
+        if (isLatest) {
+          baseClass += "bg-amber-400 text-slate-900 border-amber-500 shadow-md ring-2 ring-amber-300 scale-105 font-black";
+        } else if (isPicked) {
+          baseClass += "bg-slate-100 text-slate-400 border-slate-200 line-through opacity-60";
+        } else {
+          baseClass += "bg-white text-slate-700 hover:border-blue-400 border-slate-300 hover:shadow-sm";
+        }
+
+        item.className = baseClass;
+        numbersGrid.appendChild(item);
+      }
+    }
+
+    function renderHistory() {
+      if (pickedNumbers.length === 0) {
+        emptyHistoryNotice.classList.remove('hidden');
+        historyList.innerHTML = '';
+        return;
+      }
+
+      emptyHistoryNotice.classList.add('hidden');
+      historyList.innerHTML = '';
+
+      // 최근 뽑힌 순으로 정렬하여 표시 (역순)
+      [...pickedNumbers].reverse().forEach((num, index) => {
+        const realOrder = pickedNumbers.length - index;
+        const li = document.createElement('li');
+        const isMostRecent = index === 0;
+
+        li.className = `flex items-center justify-between p-3 rounded-xl border transition-all ${
+          isMostRecent 
+            ? 'bg-amber-50 border-amber-300 text-amber-950 font-bold shadow-sm' 
+            : 'bg-slate-50 border-slate-200 text-slate-700'
+        }`;
+
+        li.innerHTML = `
+          <div class="flex items-center gap-2.5">
+            <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+              isMostRecent ? 'bg-amber-400 text-white' : 'bg-slate-200 text-slate-600'
+            }">
+              ${realOrder}
+            </span>
+            <span class="text-xs text-slate-500">${realOrder}번째로 당첨</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-xl font-black font-display ${isMostRecent ? 'text-amber-600' : 'text-slate-800'}">${num}</span>
+            <span class="text-xs text-slate-500">번</span>
+          </div>
+        `;
+        historyList.appendChild(li);
+      });
+    }
+
+    /* =========================================================
+     * 5. 긴장감 넘치는 번호 뽑기 알고리즘 & 파티클 연출
+     * ========================================================= */
+    function triggerDraw() {
+      if (isDrawing) return;
+      if (remainingNumbers.length === 0) {
+        completeModal.classList.remove('hidden');
+        return;
+      }
+
+      getAudioContext(); // 사용자 인터랙션 시 오디오 활성화 보장
+      isDrawing = true;
+      drawBtn.disabled = true;
+
+      // 상태 UI 업데이트
+      drawStatusBadge.textContent = '두구두구... 과연 몇 번일까요?!';
+      drawStatusBadge.className = 'mb-3 px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold tracking-wide uppercase bg-amber-100 text-amber-800 border border-amber-300 shadow-sm animate-pulse';
+      pickedOrderLabel.classList.add('opacity-0');
+      displayNumberEl.classList.add('rolling-active', 'text-blue-600');
+      displayNumberEl.classList.remove('text-amber-500', 'text-slate-800');
+
+      // 무작위 당첨자 선정 (중복 방지: remainingNumbers 내에서 1개 랜덤 픽)
+      const winningIndex = Math.floor(Math.random() * remainingNumbers.length);
+      const winnerNumber = remainingNumbers[winningIndex];
+
+      // 설정된 추첨 소요 시간(밀리초)
+      const totalDuration = Math.round(drawDuration * 1000);
+      let elapsed = 0;
+      // 시작 롤링 간격: 초고속일 때는 더 빠르게, 길 때는 적절히 조절
+      let speed = totalDuration < 1000 ? 30 : 40;
+
+      function stepRolling() {
+        const randomPreview = remainingNumbers[Math.floor(Math.random() * remainingNumbers.length)];
+        displayNumberEl.textContent = randomPreview;
+        playTickSound();
+
+        elapsed += speed;
+
+        // 경과 비율에 맞춘 부드러운 감속 곡선 (Deceleration)
+        const progress = elapsed / totalDuration;
+        if (progress > 0.85) {
+          speed += totalDuration < 1000 ? 15 : 45;
+        } else if (progress > 0.65) {
+          speed += totalDuration < 1000 ? 8 : 20;
+        } else if (progress > 0.45) {
+          speed += 6;
+        }
+
+        if (elapsed < totalDuration) {
+          setTimeout(stepRolling, speed);
+        } else {
+          // 최종 결과 확정!
+          finalizePick(winningIndex, winnerNumber);
+        }
+      }
+
+      stepRolling();
+    }
+
+    function finalizePick(winningIndex, winnerNumber) {
+      // 배열에서 제거 및 기록
+      remainingNumbers.splice(winningIndex, 1);
+      pickedNumbers.push(winnerNumber);
+      lastPicked = winnerNumber;
+
+      // 최종 번호 표시
+      displayNumberEl.textContent = winnerNumber;
+      displayNumberEl.classList.remove('rolling-active', 'text-blue-600', 'text-slate-800');
+      displayNumberEl.classList.add('text-amber-500');
+
+      // 배지 및 라벨 갱신
+      const order = pickedNumbers.length;
+      orderTextEl.textContent = `${order}번째 당첨 학생: ${winnerNumber}번`;
+      pickedOrderLabel.classList.remove('opacity-0');
+
+      drawStatusBadge.textContent = `축하합니다! ${winnerNumber}번 학생이 뽑혔습니다!`;
+      drawStatusBadge.className = 'mb-3 px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold tracking-wide uppercase bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-sm';
+
+      // 팡파레 효과음 및 폭죽
+      playFanfareSound();
+      triggerConfetti();
+
+      // UI 전체 새로고침
+      updateCounters();
+      renderGrid();
+      renderHistory();
+
+      isDrawing = false;
+      checkDrawButtonState();
+
+      // 모든 번호 소진 시 축하 모달
+      if (remainingNumbers.length === 0) {
+        setTimeout(() => {
+          completeModal.classList.remove('hidden');
+        }, 1200);
+      }
+    }
+
+    // Confetti 꽃가루 파티클 효과
+    function triggerConfetti() {
+      if (typeof confetti !== 'function') return;
+      // 좌우 및 중앙에서 축포 발사
+      confetti({
+        particleCount: 70,
+        spread: 60,
+        origin: { y: 0.65 }
+      });
+      setTimeout(() => {
+        confetti({
+          particleCount: 50,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 }
+        });
+        confetti({
+          particleCount: 50,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 }
+        });
+      }, 150);
+    }
+
+    /* =========================================================
+     * 6. 이벤트 리스너 등록
+     * ========================================================= */
+    // 시간 설정 함수
+    function setDrawDuration(sec) {
+      drawDuration = parseFloat(sec);
+      durationSlider.value = drawDuration;
+      durationValueText.textContent = `${drawDuration.toFixed(1)}초`;
+
+      // 프리셋 버튼 활성화 스타일 업데이트
+      presetButtons.forEach(btn => {
+        const btnSec = parseFloat(btn.dataset.sec);
+        if (Math.abs(btnSec - drawDuration) < 0.05) {
+          btn.className = 'preset-btn active-preset px-2.5 py-1 text-xs font-bold rounded-lg border border-blue-300 bg-blue-50 text-blue-700 transition';
+        } else {
+          btn.className = 'preset-btn px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 transition';
+        }
+      });
+    }
+
+    // 슬라이더 조절 이벤트
+    durationSlider.addEventListener('input', (e) => {
+      setDrawDuration(e.target.value);
+    });
+
+    // 프리셋 버튼 클릭 이벤트
+    presetButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        setDrawDuration(btn.dataset.sec);
+      });
+    });
+
+    // 추첨 버튼 클릭
+    drawBtn.addEventListener('click', () => {
+      triggerDraw();
+    });
+
+    // 스페이스바 단축키
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' || e.key === ' ') {
+        // 인풋창에 포커스되어 있는 중에는 스페이스바 허용
+        if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+        e.preventDefault();
+        triggerDraw();
+      }
+    });
+
+    // 범위 변경 적용 버튼
+    applyRangeBtn.addEventListener('click', () => {
+      const start = parseInt(startNumInput.value, 10);
+      const end = parseInt(endNumInput.value, 10);
+
+      if (isNaN(start) || isNaN(end)) {
+        startNumInput.value = 1;
+        endNumInput.value = 25;
+        initLottery(1, 25);
+        return;
+      }
+
+      if (start < 1) startNumInput.value = 1;
+      if (end > 300) endNumInput.value = 300; // 최대 한도 방어
+
+      initLottery(parseInt(startNumInput.value, 10), parseInt(endNumInput.value, 10));
+    });
+
+    // 사운드 토글
+    soundToggleBtn.addEventListener('click', () => {
+      isSoundEnabled = !isSoundEnabled;
+      if (isSoundEnabled) {
+        soundIcon.className = 'fa-solid fa-volume-high text-emerald-600';
+        soundText.textContent = '소리 켬';
+      } else {
+        soundIcon.className = 'fa-solid fa-volume-xmark text-slate-400';
+        soundText.textContent = '소리 끔';
+      }
+    });
+
+    // 초기화 모달 이벤트
+    openResetModalBtn.addEventListener('click', () => {
+      resetModal.classList.remove('hidden');
+    });
+
+    cancelResetBtn.addEventListener('click', () => {
+      resetModal.classList.add('hidden');
+    });
+
+    confirmResetBtn.addEventListener('click', () => {
+      resetModal.classList.add('hidden');
+      initLottery(parseInt(startNumInput.value, 10), parseInt(endNumInput.value, 10));
+    });
+
+    // 완료 모달 이벤트
+    closeCompleteModalBtn.addEventListener('click', () => {
+      completeModal.classList.add('hidden');
+    });
+
+    restartFromCompleteBtn.addEventListener('click', () => {
+      completeModal.classList.add('hidden');
+      initLottery(parseInt(startNumInput.value, 10), parseInt(endNumInput.value, 10));
+    });
+
+    // 모달 배경 클릭 시 닫기
+    [resetModal, completeModal].forEach(modal => {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.classList.add('hidden');
+        }
+      });
+    });
+
+    // 앱 시작 시 초기화
+    window.addEventListener('DOMContentLoaded', () => {
+      initLottery(1, 25);
+    });
+  </script>
+</body>
+</html>
