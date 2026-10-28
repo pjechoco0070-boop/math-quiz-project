@@ -269,6 +269,95 @@
   .history-table tr.has-error { background: #fff7ed; }
   .tag-pass { display: inline-block; padding: 2px 6px; border-radius: 4px; background: #dcfce7; color: #15803d; font-weight: 700; font-size: 0.75rem; }
   .tag-fail { display: inline-block; padding: 2px 6px; border-radius: 4px; background: #fee2e2; color: #b91c1c; font-weight: 700; font-size: 0.75rem; }
+
+  /* 1등 축하 팝업 모달 & 세레머니 효과 */
+  .winner-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.85);
+    z-index: 200;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+    animation: fadeIn 0.3s ease-out;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  .winner-popup-content {
+    background: linear-gradient(145deg, #ffffff, #fffbeb);
+    border: 3px solid #facc15;
+    border-radius: 24px;
+    padding: 36px 28px;
+    text-align: center;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: 0 20px 40px rgba(250, 204, 21, 0.35);
+    animation: popScale 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+  }
+  @keyframes popScale {
+    0% { transform: scale(0.6); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .winner-crown-icon {
+    font-size: 4rem;
+    line-height: 1;
+    margin-bottom: 8px;
+    animation: bounceCrown 1.5s infinite;
+  }
+  @keyframes bounceCrown {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  .winner-subtitle {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #b45309;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .winner-team-title {
+    font-size: 2.8rem;
+    font-weight: 900;
+    color: #0f172a;
+    margin: 6px 0;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+  .winner-score-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff;
+    font-size: 1.4rem;
+    font-weight: 800;
+    padding: 8px 24px;
+    border-radius: 30px;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  }
+  .winner-members-txt {
+    font-size: 0.95rem;
+    color: #475569;
+    font-weight: 600;
+    margin-bottom: 24px;
+  }
+  .btn-winner-close {
+    background: #0f172a;
+    color: #ffffff;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-winner-close:hover {
+    background: #334155;
+  }
+
 </style>
 </head>
 <body>
@@ -449,13 +538,13 @@
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby24pL6Ugkl9bPFFD8yVYnkqeoez18OuKf7AFCWgXR_ZYWAro50yI-1wapS1Q-ToaFA/exec";
 
 // 교사용 비밀번호 저장 키 (초기값 1234)
-const PIN_STORAGE_KEY = "TEACHER_PIN_VALUE";
+const PIN_STORAGE_KEY = "TEACHER_PIN_VALUE_V2";
 if (!localStorage.getItem(PIN_STORAGE_KEY)) {
-  localStorage.setItem(PIN_STORAGE_KEY, "1234");
+  localStorage.setItem(PIN_STORAGE_KEY, "3346222");
 }
 
 function getTeacherPin() {
-  return localStorage.getItem(PIN_STORAGE_KEY) || "1234";
+  return localStorage.getItem(PIN_STORAGE_KEY) || "3346222";
 }
 
 function changeTeacherPin() {
@@ -979,14 +1068,155 @@ function renderTeamTab() {
 
 let revealInProgress = false;
 
+
+// ================= Web Audio API 두근두근 BGM & 팡파르 효과음 =================
+let audioCtx = null;
+let suspenseInterval = null;
+
+function getAudioContext() {
+  if (!audioCtx) {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    audioCtx = new AudioContext();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  return audioCtx;
+}
+
+// 심장 박동 / 북소리 (두근두근 긴장감 사운드)
+function playHeartbeat(speedMult = 1.0) {
+  try {
+    const ctx = getAudioContext();
+    const now = ctx.currentTime;
+
+    // 첫 번째 쿵 (두-)
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'triangle';
+    osc1.frequency.setValueAtTime(65, now);
+    osc1.frequency.exponentialRampToValueAtTime(32, now + 0.12);
+    gain1.gain.setValueAtTime(0.7, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.16);
+
+    // 두 번째 쿵 (-근)
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(55, now + 0.16);
+    osc2.frequency.exponentialRampToValueAtTime(28, now + 0.3);
+    gain2.gain.setValueAtTime(0.5, now + 0.16);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(now + 0.16);
+    osc2.stop(now + 0.36);
+  } catch(e) {}
+}
+
+// 순위 오픈 찰칵/종 효과음
+function playRevealTing(rank) {
+  try {
+    const ctx = getAudioContext();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    // 순위가 높을수록 톤이 올라감
+    const freqs = [350, 420, 500, 590, 700, 840, 1050];
+    const f = freqs[7 - rank] || 550;
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(f, now);
+    gain.gain.setValueAtTime(0.4, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.42);
+  } catch(e) {}
+}
+
+// 최종 1등 팡파르 효과음 (Fanfare)
+function playVictoryFanfare() {
+  try {
+    const ctx = getAudioContext();
+    const now = ctx.currentTime;
+    const notes = [
+      { f: 523.25, time: 0.0, dur: 0.15 }, // C5
+      { f: 523.25, time: 0.16, dur: 0.15 },// C5
+      { f: 523.25, time: 0.32, dur: 0.15 },// C5
+      { f: 659.25, time: 0.48, dur: 0.35 },// E5
+      { f: 587.33, time: 0.85, dur: 0.2 }, // D5
+      { f: 659.25, time: 1.05, dur: 0.2 }, // E5
+      { f: 783.99, time: 1.25, dur: 0.8 }  // G5 (길게)
+    ];
+
+    notes.forEach(n => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(n.f, now + n.time);
+      gain.gain.setValueAtTime(0.45, now + n.time);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + n.time + n.dur);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + n.time);
+      osc.stop(now + n.time + n.dur + 0.05);
+    });
+  } catch(e) {}
+}
+
+function startSuspenseBGM() {
+  stopSuspenseBGM();
+  playHeartbeat();
+  // 600ms 간격으로 두근두근 심장 박동 반복
+  suspenseInterval = setInterval(() => {
+    playHeartbeat();
+  }, 620);
+}
+
+function stopSuspenseBGM() {
+  if (suspenseInterval) {
+    clearInterval(suspenseInterval);
+    suspenseInterval = null;
+  }
+}
+
+// 1등 팝업 띄우기 및 닫기
+function showWinnerModal(firstTeamStat) {
+  stopSuspenseBGM();
+  playVictoryFanfare();
+
+  document.getElementById('winner-team-name').innerText = `${firstTeamStat.team}모둠`;
+  const avgFormatted = firstTeamStat.avgScore.toFixed(1).replace('.0', '');
+  document.getElementById('winner-team-score').innerText = `🏆 평균 ${avgFormatted}점`;
+  document.getElementById('winner-team-members').innerText = `참여 ${firstTeamStat.memberCount}명 (총점: ${firstTeamStat.totalScore}P)`;
+
+  const modal = document.getElementById('winner-modal');
+  modal.style.display = 'flex';
+}
+
+function closeWinnerModal() {
+  document.getElementById('winner-modal').style.display = 'none';
+}
+
 function startRevealRankings() {
   if (revealInProgress) return;
   revealInProgress = true;
+
+  // 두근두근 긴장감 사운드 시작
+  startSuspenseBGM();
+
   const btn = document.getElementById('btn-start-reveal');
   btn.innerText = "🥁 둥둥둥... 순위 발표 진행 중...";
 
   const order = [...Array(sortedTeamStats.length).keys()].reverse();
-  let delay = 300;
+  let delay = 400;
 
   order.forEach((statIdx, step) => {
     setTimeout(() => {
@@ -994,6 +1224,9 @@ function startRevealRankings() {
       const rank = statIdx + 1;
       const badge = document.getElementById(`rank-badge-${tStat.team}`);
       const scoreBox = document.getElementById(`score-box-${tStat.team}`);
+
+      // 각 순위 오픈 사운드
+      playRevealTing(rank);
 
       if (badge && scoreBox) {
         badge.innerText = `${rank}위`;
@@ -1010,13 +1243,19 @@ function startRevealRankings() {
         }
       }
 
+      // 마지막 1위 오픈 후 대망의 1등 축하 팝업 모달 등장
       if (step === order.length - 1) {
-        btn.innerText = "🎉 전체 순위 발표 완료! (다시 발표하기)";
-        revealInProgress = false;
+        stopSuspenseBGM();
+        setTimeout(() => {
+          showWinnerModal(sortedTeamStats[0]);
+          btn.innerText = "🎉 전체 순위 발표 완료! (다시 발표하기)";
+          revealInProgress = false;
+        }, 800);
       }
     }, delay);
 
-    delay += (step >= 4 ? 1400 : 900);
+    // 상위권(3위~1위) 발표 시 두근거리는 대기시간을 더 길게 연출
+    delay += (step >= 4 ? 1600 : 1000);
   });
 }
 
@@ -1084,5 +1323,18 @@ window.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') handleAction();
 });
 </script>
+
+<!-- 1등 축하 팝업 모달 -->
+<div id="winner-modal" class="winner-modal">
+  <div class="winner-popup-content">
+    <div class="winner-crown-icon">👑</div>
+    <div class="winner-subtitle">영예의 최종 1위</div>
+    <div id="winner-team-name" class="winner-team-title">1모둠</div>
+    <div id="winner-team-score" class="winner-score-badge">평균 0점</div>
+    <div id="winner-team-members" class="winner-members-txt">모둠원 총점: 0P</div>
+    <button class="btn-winner-close" onclick="closeWinnerModal()">닫기 ✕</button>
+  </div>
+</div>
+
 </body>
 </html>
