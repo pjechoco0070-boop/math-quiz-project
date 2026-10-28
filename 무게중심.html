@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>무게중심 수학 모둠 챌린지 (클라우드 연동)</title>
+<style>
+  :root {
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --text: #0f172a;
+    --text-muted: #64748b;
+    --border: #cbd5e1;
+    --gold: #f59e0b;
+    --danger: #ef4444;
+    --success: #10b981;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", sans-serif; }
+  body { background-color: var(--bg); color: var(--text); padding: 12px; min-height: 100vh; display: flex; flex-direction: column; align-items: center; touch-action: manipulation; }
+  .container { width: 100%; max-width: 720px; position: relative; }
+
+/* 우측 상단 툴바 (다시 도전하기 + 교사모드) */
+  .top-right-bar {
+    position: absolute;
+    top: -2px;
+    right: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 10;
+  }
+  .btn-retry-top {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    color: #334155;
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .btn-retry-top:hover {
+    background: #f1f5f9;
+    color: var(--primary);
+    border-color: var(--primary);
+  }
+  .teacher-lock-btn {
+    background: transparent;
+    border: none;
+    font-size: 1.25rem;
+    cursor: pointer;
+    opacity: 0.6;
+    padding: 4px;
+    transition: opacity 0.2s;
+  }
+  .teacher-lock-btn:hover { opacity: 1; }
+
+  /* 시작 화면 카드 */
+  .start-screen {
+    background: var(--card);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    padding: 24px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    text-align: center;
+    margin-top: 20px;
+  }
+  .start-screen h1 { font-size: 1.5rem; margin-bottom: 6px; color: #0f172a; }
+  .start-screen p { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px; }
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 18px;
+    text-align: left;
+  }
+  .form-group label { display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; }
+  .form-group input, .form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    outline: none;
+  }
+  .form-group input:focus, .form-group select:focus { border-color: var(--primary); }
+
+  /* 상단 대시보드 */
+  .dashboard { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .stat-box { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; text-align: center; }
+  .stat-label { font-size: 0.72rem; font-weight: 700; color: var(--text-muted); }
+  .stat-val { font-size: 1.25rem; font-weight: 800; margin-top: 2px; }
+  .stat-val.score { color: var(--gold); }
+  .stat-val.timer { color: #dc2626; font-variant-numeric: tabular-nums; }
+  .user-badge { font-size: 0.85rem; font-weight: 700; color: #1e293b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 4px; }
+
+  /* 퀴즈 영역 */
+  .quiz-area { display: none; }
+  .card { background: var(--card); border-radius: 14px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); padding: 18px; position: relative; }
+  .badge-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .header-tag { display: inline-block; padding: 3px 8px; background: #dbeafe; color: var(--primary-dark); font-size: 0.75rem; font-weight: 700; border-radius: 6px; }
+  .header-tag.challenge { background: #f3e8ff; color: #7c3aed; }
+  .chance-indicator { font-size: 0.8rem; font-weight: 700; color: var(--danger); }
+  .question-text { font-size: 1.05rem; font-weight: 700; line-height: 1.5; margin-bottom: 12px; word-break: keep-all; }
+
+  /* 펜 툴바 및 판서 */
+  .pen-toolbar { display: flex; align-items: center; justify-content: space-between; background: #e2e8f0; padding: 6px 12px; border-radius: 8px 8px 0 0; }
+  .tool-group { display: flex; gap: 6px; }
+  .tool-btn { padding: 5px 10px; border: 1px solid var(--border); background: #fff; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+  .tool-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  
+  .drawing-wrapper {
+    position: relative;
+    width: 100%;
+    height: 250px;
+    background-color: #ffffff;
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  .svg-layer {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: flex; justify-content: center; align-items: center;
+    pointer-events: none;
+    z-index: 1;
+  }
+  canvas#draw-canvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    touch-action: none;
+    z-index: 2;
+    cursor: crosshair;
+  }
+
+  .inputs-wrapper { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+  .input-row { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.95rem; }
+  .input-row input { padding: 8px 10px; border: 2px solid var(--border); border-radius: 6px; font-size: 1rem; width: 110px; outline: none; }
+  .input-row input:focus { border-color: var(--primary); }
+
+  .action-buttons { display: flex; gap: 8px; }
+  .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+  .btn-submit { background-color: var(--primary); color: #fff; }
+  .btn-next { background-color: #e2e8f0; color: var(--text); }
+  .btn-start { background-color: var(--primary); color: #fff; padding: 14px; width: 100%; border-radius: 8px; font-size: 1.05rem; }
+
+  .feedback { margin-top: 14px; padding: 12px; border-radius: 8px; font-size: 0.9rem; display: none; line-height: 1.5; }
+  .feedback.correct { background-color: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; }
+  .feedback.retry { background-color: #fffbeb; border: 1px solid #fde68a; color: #b45309; }
+  .feedback.wrong { background-color: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+  .feedback .explain-detail { font-weight: normal; margin-top: 5px; font-size: 0.85rem; color: #475569; }
+
+  /* 챌린지 종료 오버레이 */
+  .gameover-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.98);
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 24px;
+    z-index: 50;
+  }
+  .gameover-overlay h2 { font-size: 1.6rem; margin-bottom: 6px; color: #0f172a; }
+  .gameover-overlay .final-score { font-size: 3rem; font-weight: 900; color: var(--gold); margin-bottom: 10px; }
+  .cloud-status { margin-top: 10px; font-size: 0.85rem; font-weight: 700; color: var(--primary); }
+
+  /* 교사용 관리 모달 */
+  .teacher-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.7);
+    z-index: 100;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+  }
+  .teacher-content {
+    background: #fff;
+    width: 100%;
+    max-width: 680px;
+    max-height: 92vh;
+    border-radius: 16px;
+    padding: 20px;
+    overflow-y: auto;
+    position: relative;
+  }
+  .teacher-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 14px; }
+  .teacher-header h2 { font-size: 1.25rem; color: #0f172a; }
+  .header-actions { display: flex; gap: 8px; align-items: center; }
+  .btn-pw-change { background: #f1f5f9; border: 1px solid var(--border); padding: 5px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
+  .close-btn { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--text-muted); }
+  
+  .tab-nav { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 16px; gap: 4px; }
+  .tab-btn { padding: 10px 18px; background: none; border: none; font-size: 0.95rem; font-weight: 700; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+  .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+
+  .ceremony-ctrl { text-align: center; margin-bottom: 16px; }
+  .btn-reveal {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 30px;
+    font-size: 1rem;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(245, 158, 11, 0.4);
+  }
+
+  .reveal-list { display: flex; flex-direction: column; gap: 10px; }
+  .reveal-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 18px;
+    background: #f8fafc;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+  }
+  .reveal-card.rank-1 { background: #fefce8; border-color: #facc15; }
+  .reveal-card.rank-2 { background: #f8fafc; border-color: #cbd5e1; }
+  .reveal-card.rank-3 { background: #fff7ed; border-color: #fdba74; }
+  
+  .rank-badge {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 900;
+    font-size: 1.05rem;
+    background: #e2e8f0;
+    color: #475569;
+  }
+  .rank-1 .rank-badge { background: #facc15; color: #713f12; }
+  .rank-2 .rank-badge { background: #94a3b8; color: #0f172a; }
+  .rank-3 .rank-badge { background: #fdba74; color: #7c2d12; }
+
+  .team-info-group { text-align: left; margin-left: 14px; flex: 1; }
+  .team-title-text { font-size: 1.05rem; font-weight: 800; }
+  .team-member-count { font-size: 0.8rem; color: var(--text-muted); }
+  .score-reveal-box { font-size: 1.25rem; font-weight: 900; color: var(--primary); }
+  .score-hidden { background: #e2e8f0; color: #94a3b8; padding: 4px 12px; border-radius: 8px; font-size: 0.9rem; }
+
+  .filter-bar { display: flex; gap: 10px; margin-bottom: 14px; align-items: center; }
+  .filter-bar select { padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 6px; font-weight: 600; outline: none; }
+
+  .history-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 10px; }
+  .history-table th, .history-table td { border: 1px solid var(--border); padding: 8px; text-align: center; }
+  .history-table th { background: #f8fafc; color: var(--text-muted); font-weight: 700; }
+  .history-table tr.has-error { background: #fff7ed; }
+  .tag-pass { display: inline-block; padding: 2px 6px; border-radius: 4px; background: #dcfce7; color: #15803d; font-weight: 700; font-size: 0.75rem; }
+  .tag-fail { display: inline-block; padding: 2px 6px; border-radius: 4px; background: #fee2e2; color: #b91c1c; font-weight: 700; font-size: 0.75rem; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="top-right-bar">
+    <button class="btn-retry-top" onclick="retryChallenge()" title="처음부터 다시 도전">🔄 다시 도전하기</button>
+    <button class="teacher-lock-btn" onclick="openTeacherAuth()" title="교사 모드 접속">🔒</button>
+  </div>
+
+  <!-- 1. 시작 정보 입력 화면 -->
+  <div id="start-screen" class="start-screen">
+    <h1>📐 무게중심 수학 모둠 챌린지</h1>
+    <p>우리 모둠의 최고 점수를 향해 문제를 해결해 보세요!</p>
+    
+    <div class="form-grid">
+      <div class="form-group">
+        <label>소속 모둠 선택</label>
+        <select id="user-team">
+          <option value="1">1모둠</option>
+          <option value="2">2모둠</option>
+          <option value="3">3모둠</option>
+          <option value="4">4모둠</option>
+          <option value="5">5모둠</option>
+          <option value="6">6모둠</option>
+          <option value="7">7모둠</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>학년 / 반</label>
+        <div style="display: flex; gap: 6px;">
+          <select id="user-grade"><option value="2">2학년</option><option value="1">1학년</option><option value="3">3학년</option></select>
+          <input type="number" id="user-class" placeholder="반" min="1" max="20" value="1">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>번호</label>
+        <input type="number" id="user-num" placeholder="번호" min="1" max="40" value="1">
+      </div>
+      <div class="form-group">
+        <label>이름</label>
+        <input type="text" id="user-name" placeholder="학생 이름">
+      </div>
+      <div class="form-group" style="grid-column: span 2;">
+        <label>챌린지 제한 시간</label>
+        <select id="time-select">
+          <option value="0.5">🧪 [선생님 테스트] 30초 체험 모드</option>
+          <option value="5">⚡ 5분 스피드 챌린지</option>
+          <option value="10" selected>🔥 10분 집중 챌린지</option>
+          <option value="20">🏆 20분 정규 챌린지</option>
+        </select>
+      </div>
+    </div>
+    
+    <button class="btn btn-start" onclick="startChallenge()">모둠 챌린지 시작하기 ❯</button>
+  </div>
+
+  <!-- 2. 본 퀴즈 영역 -->
+  <div id="quiz-area" class="quiz-area">
+    <div class="dashboard">
+      <div class="stat-box">
+        <div class="stat-label">학생 / 모둠 정보</div>
+        <div id="user-info-display" class="user-badge">-</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">남은 시간</div>
+        <div id="timer-display" class="stat-val timer">10:00</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">획득 포인트</div>
+        <div id="score-display" class="stat-val score">0 P</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="badge-row">
+        <div>
+          <span id="problem-badge" class="header-tag">문제 1-1</span>
+          <span id="category-badge" class="header-tag" style="background: #e2e8f0; color: #334155;">길이 구하기</span>
+        </div>
+        <div class="chance-indicator" id="chances-display">남은 기회: ❤️❤️❤️</div>
+      </div>
+      
+      <div id="question-text" class="question-text">문제를 불러오는 중...</div>
+      
+      <div class="pen-toolbar">
+        <div class="tool-group">
+          <button class="tool-btn active" id="tool-pen" onclick="setTool('pen')">✏️ 펜</button>
+          <button class="tool-btn" id="tool-eraser" onclick="setTool('eraser')">🧹 지우개</button>
+        </div>
+        <button class="tool-btn" onclick="clearCanvas()">전체 지우기</button>
+      </div>
+
+      <div class="drawing-wrapper">
+        <div class="svg-layer" id="diagram-container"></div>
+        <canvas id="draw-canvas"></canvas>
+      </div>
+
+      <div class="inputs-wrapper" id="inputs-container"></div>
+
+      <div class="action-buttons">
+        <button id="btn-action" class="btn btn-submit" onclick="handleAction()">정답 확인 (Enter)</button>
+      </div>
+
+      <div id="feedback-box" class="feedback"></div>
+
+      <div id="gameover" class="gameover-overlay">
+        <h2>⏰ 챌린지 종료!</h2>
+        <p id="student-congrats" style="color: var(--text-muted); font-size: 0.95rem;"></p>
+        <div id="final-score" class="final-score">0 P</div>
+        <p id="final-summary" style="font-size: 0.95rem; font-weight: 600;"></p>
+        <div id="cloud-sync-status" class="cloud-status">☁️ 점수 클라우드 전송 중...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 3. 교사용 관리 모달 -->
+<div id="teacher-modal" class="teacher-modal">
+  <div class="teacher-content">
+    <div class="teacher-header">
+      <h2>👩‍🏫 교사 관리 대시보드</h2>
+      <div class="header-actions">
+        <button class="btn-pw-change" onclick="changeTeacherPin()">🔑 비번 변경</button>
+        <button class="close-btn" onclick="closeTeacherModal()">&times;</button>
+      </div>
+    </div>
+
+    <div class="tab-nav">
+      <button class="tab-btn active" onclick="switchTeacherTab('team')">🏆 모둠별 현황판 (순위 오픈)</button>
+      <button class="tab-btn" onclick="switchTeacherTab('personal')">👤 개인별 오답 현황판</button>
+    </div>
+
+    <div id="pane-team" class="tab-pane active">
+      <div class="ceremony-ctrl">
+        <button class="btn-reveal" id="btn-start-reveal" onclick="startRevealRankings()">
+          ✨ 두근두근 모둠 순위 발표 시작! ✨
+        </button>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 6px;">
+          모둠원 수의 유불리가 없도록 <b>[평균 점수]</b>를 기준으로 7위부터 1위까지 차례로 오픈됩니다.
+        </p>
+      </div>
+      <div class="reveal-list" id="team-reveal-container"></div>
+    </div>
+
+    <div id="pane-personal" class="tab-pane">
+      <div class="filter-bar">
+        <label for="student-select" style="font-size: 0.85rem; font-weight: 700;">학생 선택:</label>
+        <select id="student-select" onchange="renderStudentHistory()">
+          <option value="">-- 학생을 선택하세요 --</option>
+        </select>
+      </div>
+
+      <div style="overflow-x: auto;">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>문항</th>
+              <th>유형</th>
+              <th>제출 이력 (오답 히스토리)</th>
+              <th>정답</th>
+              <th>결과</th>
+            </tr>
+          </thead>
+          <tbody id="history-table-body">
+            <tr><td colspan="5" style="color: var(--text-muted);">조회할 학생을 선택해 주세요.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =======================================================================
+   선생님의 구글 앱스 스크립트(Google Apps Script) 배포 URL을 아래에 넣으세요!
+   ======================================================================= */
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby24pL6Ugkl9bPFFD8yVYnkqeoez18OuKf7AFCWgXR_ZYWAro50yI-1wapS1Q-ToaFA/exec";
+
+// 교사용 비밀번호 저장 키 (초기값 1234)
+const PIN_STORAGE_KEY = "TEACHER_PIN_VALUE";
+if (!localStorage.getItem(PIN_STORAGE_KEY)) {
+  localStorage.setItem(PIN_STORAGE_KEY, "1234");
+}
+
+function getTeacherPin() {
+  return localStorage.getItem(PIN_STORAGE_KEY) || "1234";
+}
+
+function changeTeacherPin() {
+  const currentPin = getTeacherPin();
+  const inputOld = prompt("현재 비밀번호를 입력하세요:");
+  if (inputOld === null) return;
+  if (inputOld !== currentPin) {
+    alert("현재 비밀번호가 일치하지 않습니다.");
+    return;
+  }
+  const newPin = prompt("새로운 비밀번호를 입력하세요 (숫자/문자 가능):");
+  if (!newPin || !newPin.trim()) {
+    alert("비밀번호는 공백일 수 없습니다.");
+    return;
+  }
+  localStorage.setItem(PIN_STORAGE_KEY, newPin.trim());
+  alert("비밀번호가 성공적으로 변경되었습니다!");
+}
+
+let studentInfo = { grade: 2, classNum: 1, num: 1, name: '', team: 1, minutes: 10 };
+let score = 0;
+let totalSolved = 0;
+let totalAttempts = 0;
+let currentProblem = null;
+let remainingSeconds = 600;
+let timerInterval = null;
+
+let currentChances = 3;
+let isAnswered = false;
+let currentAttemptLogs = [];
+let studentHistoryLogs = []; // 구글 시트 전송용 풀이 누적 로그
+
+const STORAGE_KEY = "MATH_CHALLENGE_CLASS_DATA_V4";
+
+let canvas, ctx;
+let isDrawing = false;
+let currentTool = 'pen';
+
+
+function retryChallenge() {
+  // 퀴즈 진행 중일 경우 확인 팝업
+  if (document.getElementById('quiz-area').style.display === 'block' && remainingSeconds > 0) {
+    if (!confirm("현재 진행 중인 챌린지를 중단하고 처음부터 다시 도전하시겠습니까?")) {
+      return;
+    }
+  }
+
+  // 타이머 중지 및 초기화
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+
+  // 상태 초기화
+  score = 0;
+  totalSolved = 0;
+  totalAttempts = 0;
+  currentProblem = null;
+  isAnswered = false;
+  currentAttemptLogs = [];
+  studentHistoryLogs = [];
+  currentChances = 3;
+
+  // 화면 전환 (시작화면 보이기, 퀴즈 및 게임오버 숨기기)
+  document.getElementById('quiz-area').style.display = 'none';
+  document.getElementById('gameover').style.display = 'none';
+  document.getElementById('start-screen').style.display = 'block';
+
+  // 피드백 및 캔버스 초기화
+  const feedback = document.getElementById('feedback-box');
+  if (feedback) {
+    feedback.style.display = 'none';
+    feedback.className = 'feedback';
+  }
+  clearCanvas();
+}
+
+function startChallenge() {
+  const nameInput = document.getElementById('user-name').value.trim();
+  if (!nameInput) {
+    alert("이름을 입력해 주세요!");
+    return;
+  }
+  studentInfo.grade = document.getElementById('user-grade').value;
+  studentInfo.classNum = document.getElementById('user-class').value;
+  studentInfo.num = document.getElementById('user-num').value;
+  studentInfo.name = nameInput;
+  studentInfo.team = parseInt(document.getElementById('user-team').value, 10);
+  studentInfo.minutes = parseFloat(document.getElementById('time-select').value);
+
+  document.getElementById('start-screen').style.display = 'none';
+  document.getElementById('quiz-area').style.display = 'block';
+
+  document.getElementById('user-info-display').innerText = 
+    `[${studentInfo.team}모둠] ${studentInfo.grade}-${studentInfo.classNum}-${studentInfo.num} ${studentInfo.name}`;
+
+  remainingSeconds = Math.round(studentInfo.minutes * 60);
+  
+  initCanvas();
+  startTimer();
+  generateRandomProblem();
+}
+
+function initCanvas() {
+  canvas = document.getElementById('draw-canvas');
+  ctx = canvas.getContext('2d');
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width;
+  canvas.height = rect.height;
+
+  canvas.addEventListener('pointerdown', startDraw);
+  canvas.addEventListener('pointermove', draw);
+  canvas.addEventListener('pointerup', endDraw);
+  canvas.addEventListener('pointercancel', endDraw);
+}
+
+function setTool(tool) {
+  currentTool = tool;
+  document.getElementById('tool-pen').classList.toggle('active', tool === 'pen');
+  document.getElementById('tool-eraser').classList.toggle('active', tool === 'eraser');
+}
+
+function clearCanvas() {
+  if (ctx && canvas) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+}
+
+function startDraw(e) {
+  isDrawing = true;
+  ctx.beginPath();
+  const rect = canvas.getBoundingClientRect();
+  ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+}
+
+function draw(e) {
+  if (!isDrawing) return;
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+
+  if (currentTool === 'pen') {
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.strokeStyle = '#2563eb';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+  } else {
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.lineWidth = 22;
+    ctx.lineCap = 'round';
+  }
+
+  ctx.lineTo(x, y);
+  ctx.stroke();
+}
+
+function endDraw() {
+  isDrawing = false;
+}
+
+function startTimer() {
+  timerInterval = setInterval(() => {
+    remainingSeconds--;
+    const m = Math.floor(remainingSeconds / 60);
+    const s = remainingSeconds % 60;
+    document.getElementById('timer-display').innerText = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+
+    if (remainingSeconds <= 0) {
+      clearInterval(timerInterval);
+      endChallenge();
+    }
+  }, 1000);
+}
+
+function updateChanceUI() {
+  const hearts = "❤️".repeat(currentChances) + "🖤".repeat(3 - currentChances);
+  document.getElementById('chances-display').innerHTML = `남은 기회: ${hearts}`;
+}
+
+function rand(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function generateRandomProblem() {
+  isAnswered = false;
+  currentChances = 3;
+  currentAttemptLogs = [];
+  updateChanceUI();
+  clearCanvas();
+
+  const feedback = document.getElementById('feedback-box');
+  feedback.style.display = 'none';
+  feedback.className = 'feedback';
+  
+  const btn = document.getElementById('btn-action');
+  btn.innerText = "정답 확인 (Enter)";
+  btn.className = "btn btn-submit";
+
+  const roll = Math.random() * 100;
+  let p = null;
+
+  if (roll < 40) {
+    const subType = rand(1, 4);
+    if (subType === 1) {
+      const gd = rand(3, 8);
+      p = {
+        badge: "문제 1-1", category: "길이 구하기", isChallenge: false,
+        question: `점 G가 △ABC의 무게중심이다. GD = ${gd} cm일 때, x(AG)와 y(AD)의 값을 각각 구하시오.`,
+        fields: [{ name: 'x', label: 'x (AG)', unit: 'cm', answer: gd * 2 }, { name: 'y', label: 'y (AD)', unit: 'cm', answer: gd * 3 }],
+        svg: `<svg width="240" height="150" viewBox="0 0 240 150"><polygon points="110,20 30,130 200,130" fill="none" stroke="#333" stroke-width="2"/><line x1="110" y1="20" x2="115" y2="130" stroke="#333" stroke-width="1.5"/><circle cx="113.3" cy="93.3" r="3.5" fill="#333"/><text x="105" y="15" font-weight="bold">A</text><text x="15" y="135" font-weight="bold">B</text><text x="205" y="135" font-weight="bold">C</text><text x="110" y="145" font-weight="bold">D</text><text x="96" y="96" font-weight="bold">G</text><text x="118" y="60" font-size="12" fill="#2563eb">x cm</text><text x="118" y="115" font-size="12" fill="#e11d48">${gd} cm</text></svg>`,
+        explain: `AG = 2 × GD = ${gd * 2} cm, AD = 3 × GD = ${gd * 3} cm 입니다.`
+      };
+    } else if (subType === 2) {
+      const dg = rand(4, 9);
+      p = {
+        badge: "문제 1-2", category: "길이 구하기", isChallenge: false,
+        question: `점 G는 △ABC의 무게중심이고, DE // BC 이다. DG = ${dg} cm일 때, BC의 길이를 구하시오.`,
+        fields: [{ name: 'bc', label: 'BC의 길이', unit: 'cm', answer: dg * 3 }],
+        svg: `<svg width="240" height="150" viewBox="0 0 240 150"><polygon points="120,20 30,130 210,130" fill="none" stroke="#333" stroke-width="2"/><line x1="120" y1="20" x2="120" y2="130" stroke="#888" stroke-dasharray="2,2"/><line x1="60" y1="93.3" x2="180" y2="93.3" stroke="#333" stroke-width="1.5"/><circle cx="120" cy="93.3" r="3.5" fill="#333"/><text x="115" y="15" font-weight="bold">A</text><text x="18" y="135" font-weight="bold">B</text><text x="215" y="135" font-weight="bold">C</text><text x="45" y="96" font-weight="bold">D</text><text x="185" y="96" font-weight="bold">E</text><text x="125" y="90" font-weight="bold">G</text><text x="115" y="145" font-weight="bold">F</text><text x="80" y="88" font-size="12" fill="#2563eb">${dg} cm</text></svg>`,
+        explain: `DG : BF = 2 : 3 이므로 BF = ${dg * 1.5} cm, BC = 2 × BF = ${dg * 3} cm 입니다.`
+      };
+    } else if (subType === 3) {
+      const bd = rand(3, 7);
+      const ag = rand(4, 9) * 2;
+      p = {
+        badge: "문제 1-3", category: "길이 구하기", isChallenge: false,
+        question: `점 G는 △ABC의 무게중심이다. AG = ${ag} cm, BD = ${bd} cm일 때, x(GD)와 y(BC)의 값을 구하시오.`,
+        fields: [{ name: 'x', label: 'x (GD)', unit: 'cm', answer: ag / 2 }, { name: 'y', label: 'y (BC)', unit: 'cm', answer: bd * 2 }],
+        svg: `<svg width="240" height="150" viewBox="0 0 240 150"><polygon points="110,20 40,130 190,130" fill="none" stroke="#333" stroke-width="2"/><line x1="110" y1="20" x2="115" y2="130" stroke="#333" stroke-width="1.5"/><circle cx="113.3" cy="93.3" r="3.5" fill="#333"/><text x="105" y="15" font-weight="bold">A</text><text x="25" y="135" font-weight="bold">B</text><text x="195" y="135" font-weight="bold">C</text><text x="110" y="145" font-weight="bold">D</text><text x="96" y="96" font-weight="bold">G</text><text x="118" y="58" font-size="12">${ag} cm</text><text x="118" y="112" font-size="12" fill="#2563eb">x cm</text><text x="65" y="145" font-size="12">${bd} cm</text><text x="145" y="145" font-size="12" fill="#e11d48">y cm</text></svg>`,
+        explain: `GD = AG ÷ 2 = ${ag / 2} cm, BC = 2 × BD = ${bd * 2} cm 입니다.`
+      };
+    } else {
+      const gg = rand(2, 5);
+      p = {
+        badge: "문제 1-4", category: "길이 구하기", isChallenge: false,
+        question: `점 G는 △ABC의 무게중심, G'은 △GBC의 무게중심이다. AG = ${gg * 6} cm일 때, GG'의 길이를 구하시오.`,
+        fields: [{ name: 'gg', label: "GG' 길이", unit: 'cm', answer: gg * 2 }],
+        svg: `<svg width="240" height="150" viewBox="0 0 240 150"><polygon points="120,15 30,135 210,135" fill="none" stroke="#333" stroke-width="2"/><line x1="120" y1="15" x2="120" y2="135" stroke="#333" stroke-width="1.5"/><line x1="30" y1="135" x2="120" y2="95" stroke="#888"/><line x1="210" y1="135" x2="120" y2="95" stroke="#888"/><circle cx="120" cy="95" r="3.5" fill="#333"/><circle cx="120" cy="121.6" r="3" fill="#333"/><text x="115" y="12" font-weight="bold">A</text><text x="18" y="140" font-weight="bold">B</text><text x="215" y="140" font-weight="bold">C</text><text x="115" y="148" font-weight="bold">D</text><text x="125" y="96" font-weight="bold">G</text><text x="125" y="124" font-weight="bold">G'</text><text x="125" y="55" font-size="12" fill="#2563eb">${gg * 6} cm</text></svg>`,
+        explain: `GD = ${gg * 3} cm 이며 GG' = GD × (2/3) = ${gg * 2} cm 입니다.`
+      };
+    }
+  } else if (roll < 80) {
+    const subType = rand(1, 3);
+    if (subType === 1) {
+      const s = rand(5, 12);
+      p = {
+        badge: "문제 2-1", category: "넓이 구하기", isChallenge: false,
+        question: `점 G는 △ABC의 무게중심이고 △GBD 넓이가 ${s} cm²일 때, △AGC의 넓이를 구하시오.`,
+        fields: [{ name: 'agc', label: '△AGC 넓이', unit: 'cm²', answer: s * 2 }],
+        svg: `<svg width="240" height="150" viewBox="0 0 240 150"><polygon points="110,18 35,130 195,130" fill="none" stroke="#333" stroke-width="2"/><polygon points="113.3,92.6 35,130 115,130" fill="#fee2e2" stroke="#333" stroke-width="1"/><line x1="110" y1="18" x2="115" y2="130" stroke="#333"/><line x1="35" y1="130" x2="152.5" y2="74" stroke="#333"/><line x1="195" y1="130" x2="72.5" y2="74" stroke="#333"/><circle cx="113.3" cy="92.6" r="3" fill="#333"/><text x="105" y="14" font-weight="bold">A</text><text x="20" y="135" font-weight="bold">B</text><text x="200" y="135" font-weight="bold">C</text><text x="110" y="144" font-weight="bold">D</text><text x="156" y="74" font-weight="bold">E</text><text x="58" y="74" font-weight="bold">F</text><text x="118" y="94" font-weight="bold">G</text><text x="65" y="122" font-size="11" fill="#dc2626">${s} cm²</text></svg>`,
+        explain: `△AGC는 2조각의 합이므로 ${s} × 2 = ${s * 2} cm² 입니다.`
+      };
+    } else if (subType === 2) {
+      const area = rand(6, 16);
+      p = {
+        badge: "문제 2-2", category: "넓이 구하기", isChallenge: false,
+        question: `점 G는 △ABC의 무게중심이고, △GCA의 넓이가 ${area} cm²일 때, 색칠된 사각형 GFBD의 넓이를 구하시오.`,
+        fields: [{ name: 'area', label: '□GFBD 넓이', unit: 'cm²', answer: area }],
+        svg: `<svg width="240" height="150" viewBox="0 0 240 150"><polygon points="110,18 35,130 195,130" fill="none" stroke="#333" stroke-width="2"/><polygon points="113.3,92.6 72.5,74 35,130 115,130" fill="#dbeafe" stroke="#333" stroke-width="1"/><line x1="110" y1="18" x2="115" y2="130" stroke="#333"/><line x1="35" y1="130" x2="152.5" y2="74" stroke="#333"/><line x1="195" y1="130" x2="72.5" y2="74" stroke="#333"/><circle cx="113.3" cy="92.6" r="3" fill="#333"/><text x="105" y="14" font-weight="bold">A</text><text x="20" y="135" font-weight="bold">B</text><text x="200" y="135" font-weight="bold">C</text><text x="110" y="144" font-weight="bold">D</text><text x="156" y="74" font-weight="bold">E</text><text x="58" y="74" font-weight="bold">F</text><text x="118" y="94" font-weight="bold">G</text></svg>`,
+        explain: `□GFBD와 △GCA 모두 전체 넓이의 1/3로 같으므로 ${area} cm² 입니다.`
+      };
+    } else {
+      const gde = rand(3, 8);
+      p = {
+        badge: "문제 2-3", category: "넓이 구하기", isChallenge: false,
+        question: `점 G는 △ABC의 무게중심이고, △GAB의 넓이가 ${gde * 4} cm²일 때, 색칠된 △GDE의 넓이를 구하시오.`,
+        fields: [{ name: 'gde', label: '△GDE 넓이', unit: 'cm²', answer: gde }],
+        svg: `<svg width="240" height="150" viewBox="0 0 240 150"><polygon points="120,18 35,130 205,130" fill="none" stroke="#333" stroke-width="2"/><polygon points="120,92.6 120,130 162.5,74" fill="#dcfce7" stroke="#333" stroke-width="1"/><line x1="120" y1="18" x2="120" y2="130" stroke="#333"/><line x1="35" y1="130" x2="162.5" y2="74" stroke="#333"/><line x1="120" y1="130" x2="162.5" y2="74" stroke="#16a34a" stroke-width="1.5"/><circle cx="120" cy="92.6" r="3" fill="#333"/><text x="115" y="14" font-weight="bold">A</text><text x="20" y="135" font-weight="bold">B</text><text x="210" y="135" font-weight="bold">C</text><text x="115" y="144" font-weight="bold">D</text><text x="168" y="74" font-weight="bold">E</text><text x="108" y="94" font-weight="bold">G</text></svg>`,
+        explain: `△GDE = 1/4 × △GAB 이므로 ${gde * 4} ÷ 4 = ${gde} cm² 입니다.`
+      };
+    }
+  } else {
+    const ef = rand(5, 12);
+    p = {
+      badge: "도전문제", category: "대각선 삼등분", isChallenge: true,
+      question: `평행사변형 ABCD에서 BC, CD의 중점이 각각 M, N이다. BD = ${ef * 3} cm일 때, 선분 EF의 길이를 구하시오.`,
+      fields: [{ name: 'ef', label: 'EF 길이', unit: 'cm', answer: ef }],
+      svg: `<svg width="260" height="145" viewBox="0 0 260 145"><polygon points="60,20 230,20 185,125 15,125" fill="none" stroke="#333" stroke-width="2"/><line x1="15" y1="125" x2="230" y2="20" stroke="#333" stroke-width="1.5"/><line x1="60" y1="20" x2="100" y2="125" stroke="#2563eb" stroke-width="1.5"/><line x1="60" y1="20" x2="207.5" y2="72.5" stroke="#7c3aed" stroke-width="1.5"/><line x1="60" y1="20" x2="185" y2="125" stroke="#aaa" stroke-dasharray="2,2"/><circle cx="86.6" cy="90" r="3" fill="#333"/><circle cx="158.3" cy="55" r="3" fill="#333"/><text x="50" y="16" font-weight="bold">A</text><text x="235" y="16" font-weight="bold">D</text><text x="5" y="130" font-weight="bold">B</text><text x="190" y="130" font-weight="bold">C</text><text x="96" y="140" font-weight="bold">M</text><text x="215" y="75" font-weight="bold">N</text><text x="88" y="105" font-weight="bold" fill="#2563eb">E</text><text x="160" y="50" font-weight="bold" fill="#7c3aed">F</text><text x="135" y="16" font-size="12" fill="#dc2626">BD = ${ef * 3} cm</text></svg>`,
+      explain: `BE = EF = FD = 1/3 BD 이므로 EF = ${ef * 3} ÷ 3 = ${ef} cm 입니다.`
+    };
+  }
+
+  currentProblem = p;
+  document.getElementById('problem-badge').innerText = p.badge;
+  document.getElementById('problem-badge').className = p.isChallenge ? "header-tag challenge" : "header-tag";
+  document.getElementById('category-badge').innerText = p.category;
+  document.getElementById('question-text').innerText = p.question;
+  document.getElementById('diagram-container').innerHTML = p.svg;
+
+  const inputsArea = document.getElementById('inputs-container');
+  inputsArea.innerHTML = '';
+  p.fields.forEach(f => {
+    const row = document.createElement('div');
+    row.className = 'input-row';
+    row.innerHTML = `<label for="ans-${f.name}">${f.label}:</label><input type="number" id="ans-${f.name}" /><span>${f.unit}</span>`;
+    inputsArea.appendChild(row);
+  });
+
+  setTimeout(() => {
+    const first = document.getElementById(`ans-${p.fields[0].name}`);
+    if (first) first.focus();
+  }, 50);
+}
+
+function handleAction() {
+  if (isAnswered) generateRandomProblem();
+  else checkAnswer();
+}
+
+function checkAnswer() {
+  if (!currentProblem || isAnswered) return;
+
+  let allCorrect = true;
+  let enteredValues = [];
+
+  currentProblem.fields.forEach(f => {
+    const val = parseInt(document.getElementById(`ans-${f.name}`).value, 10);
+    enteredValues.push(`${f.name}=${isNaN(val) ? '미입력' : val}`);
+    if (val !== f.answer) allCorrect = false;
+  });
+
+  currentAttemptLogs.push(enteredValues.join(', '));
+  const feedback = document.getElementById('feedback-box');
+  feedback.style.display = 'block';
+
+  if (allCorrect) {
+    totalAttempts++;
+    totalSolved++;
+    const points = currentChances === 3 ? 10 : (currentChances === 2 ? 7 : 4);
+    score += points;
+
+    feedback.className = 'feedback correct';
+    feedback.innerHTML = `<strong>정답입니다! (+${points}P 획득)</strong><div class="explain-detail">${currentProblem.explain}</div>`;
+    document.getElementById('score-display').innerText = `${score} P`;
+    
+    saveProblemLog(true);
+    isAnswered = true;
+    finishProblemState();
+  } else {
+    currentChances--;
+    updateChanceUI();
+
+    if (currentChances > 0) {
+      feedback.className = 'feedback retry';
+      feedback.innerHTML = `<strong>오답입니다! 다시 한번 풀어보세요. (남은 기회: ${currentChances}회)</strong>`;
+      const first = document.getElementById(`ans-${currentProblem.fields[0].name}`);
+      if (first) first.focus();
+    } else {
+      totalAttempts++;
+      feedback.className = 'feedback wrong';
+      const ansStr = currentProblem.fields.map(f => `${f.label} = ${f.answer}${f.unit}`).join(', ');
+      feedback.innerHTML = `<strong>3번의 기회를 모두 소진했습니다.</strong><br>정답: <b>${ansStr}</b><div class="explain-detail">${currentProblem.explain}</div>`;
+      
+      saveProblemLog(false);
+      isAnswered = true;
+      finishProblemState();
+    }
+  }
+}
+
+function finishProblemState() {
+  const btn = document.getElementById('btn-action');
+  btn.innerText = "다음 문제 ❯ (Enter)";
+  btn.className = "btn btn-next";
+}
+
+function saveProblemLog(isPassed) {
+  const correctStr = currentProblem.fields.map(f => `${f.label}=${f.answer}`).join(', ');
+  const logItem = {
+    title: currentProblem.badge,
+    category: currentProblem.category,
+    attempts: [...currentAttemptLogs],
+    correctAnswer: correctStr,
+    passed: isPassed
+  };
+  studentHistoryLogs.push(logItem);
+
+  // 로컬 브라우저에도 백업
+  const studentKey = `${studentInfo.grade}${String(studentInfo.classNum).padStart(2, '0')}${String(studentInfo.num).padStart(2, '0')}`;
+  let classData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+  if (!classData[studentKey]) {
+    classData[studentKey] = { info: { ...studentInfo }, score: 0, solved: 0, attempts: 0, history: [] };
+  }
+  classData[studentKey].score = score;
+  classData[studentKey].solved = totalSolved;
+  classData[studentKey].attempts = totalAttempts;
+  classData[studentKey].info = { ...studentInfo };
+  classData[studentKey].history.push(logItem);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(classData));
+}
+
+// 챌린지 종료 및 구글 스프레드시트 실시간 전송
+function endChallenge() {
+  document.getElementById('gameover').style.display = 'flex';
+  document.getElementById('student-congrats').innerText = 
+    `[${studentInfo.team}모둠] ${studentInfo.grade}학년 ${studentInfo.classNum}반 ${studentInfo.num}번 ${studentInfo.name}`;
+  document.getElementById('final-score').innerText = `${score} P`;
+  document.getElementById('final-summary').innerText = `총 ${totalAttempts}문제 중 ${totalSolved}문제를 해결했습니다!`;
+
+  sendDataToGoogleSheet();
+}
+
+function sendDataToGoogleSheet() {
+  const statusEl = document.getElementById('cloud-sync-status');
+  if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("여기에_배포한")) {
+    statusEl.innerHTML = "⚠️ 구글 시트 연동 URL이 아직 설정되지 않았습니다 (로컬 저장 완료).";
+    statusEl.style.color = "#d97706";
+    return;
+  }
+
+  statusEl.innerHTML = "☁️ 선생님 구글 시트로 점수 전송 중...";
+
+  const payload = {
+    grade: studentInfo.grade,
+    classNum: studentInfo.classNum,
+    num: studentInfo.num,
+    name: studentInfo.name,
+    team: studentInfo.team,
+    minutes: studentInfo.minutes,
+    score: score,
+    solved: totalSolved,
+    attempts: totalAttempts,
+    history: studentHistoryLogs
+  };
+
+  fetch(GOOGLE_SCRIPT_URL, {
+    method: "POST",
+    mode: "no-cors", // Google Apps Script CORS 제약 우회
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  }).then(() => {
+    statusEl.innerHTML = "✅ 선생님 구글 시트에 점수가 안전하게 제출되었습니다!";
+    statusEl.style.color = "#15803d";
+  }).catch(err => {
+    statusEl.innerHTML = "⚠️ 전송 실패 (네트워크를 확인하세요).";
+    statusEl.style.color = "#dc2626";
+  });
+}
+
+/* ================= 교사용 대시보드 로직 ================= */
+function openTeacherAuth() {
+  const pin = prompt("교사용 비밀번호를 입력하세요:");
+  if (pin === getTeacherPin()) {
+    document.getElementById('teacher-modal').style.display = 'flex';
+    initTeacherDashboard();
+  } else if (pin !== null) {
+    alert("비밀번호가 일치하지 않습니다.");
+  }
+}
+
+function closeTeacherModal() {
+  document.getElementById('teacher-modal').style.display = 'none';
+}
+
+function switchTeacherTab(tabName) {
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+
+  if (tabName === 'team') {
+    document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
+    document.getElementById('pane-team').classList.add('active');
+    renderTeamTab();
+  } else {
+    document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
+    document.getElementById('pane-personal').classList.add('active');
+    renderPersonalTab();
+  }
+}
+
+function initTeacherDashboard() {
+  switchTeacherTab('team');
+}
+
+let sortedTeamStats = [];
+
+function renderTeamTab() {
+  const classData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+  const stats = {};
+  for (let t = 1; t <= 7; t++) stats[t] = { team: t, totalScore: 0, memberCount: 0, avgScore: 0 };
+
+  Object.values(classData).forEach(s => {
+    const t = s.info.team || 1;
+    if (t >= 1 && t <= 7) {
+      stats[t].totalScore += s.score;
+      stats[t].memberCount += 1;
+    }
+  });
+
+  for (let t = 1; t <= 7; t++) {
+    stats[t].avgScore = stats[t].memberCount > 0 ? (stats[t].totalScore / stats[t].memberCount) : 0;
+  }
+
+  sortedTeamStats = Object.values(stats).sort((a, b) => b.avgScore - a.avgScore);
+
+  const container = document.getElementById('team-reveal-container');
+  container.innerHTML = '';
+
+  sortedTeamStats.forEach((tStat, idx) => {
+    const rank = idx + 1;
+    const card = document.createElement('div');
+    card.id = `reveal-card-${tStat.team}`;
+    card.className = `reveal-card rank-${rank}`;
+    card.innerHTML = `
+      <div class="rank-badge" id="rank-badge-${tStat.team}">?</div>
+      <div class="team-info-group">
+        <div class="team-title-text">${tStat.team}모둠</div>
+        <div class="team-member-count">참여 인원: ${tStat.memberCount}명 (총점: ${tStat.totalScore}P)</div>
+      </div>
+      <div class="score-reveal-box" id="score-box-${tStat.team}">
+        <span class="score-hidden">두근두근</span>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+
+  const btn = document.getElementById('btn-start-reveal');
+  btn.style.display = 'inline-block';
+  btn.innerText = "✨ 두근두근 모둠 순위 발표 시작! ✨";
+}
+
+let revealInProgress = false;
+
+function startRevealRankings() {
+  if (revealInProgress) return;
+  revealInProgress = true;
+  const btn = document.getElementById('btn-start-reveal');
+  btn.innerText = "🥁 둥둥둥... 순위 발표 진행 중...";
+
+  const order = [...Array(sortedTeamStats.length).keys()].reverse();
+  let delay = 300;
+
+  order.forEach((statIdx, step) => {
+    setTimeout(() => {
+      const tStat = sortedTeamStats[statIdx];
+      const rank = statIdx + 1;
+      const badge = document.getElementById(`rank-badge-${tStat.team}`);
+      const scoreBox = document.getElementById(`score-box-${tStat.team}`);
+
+      if (badge && scoreBox) {
+        badge.innerText = `${rank}위`;
+        const avgFormatted = tStat.avgScore.toFixed(1).replace('.0', '');
+        let crown = "";
+        if (rank === 1) crown = " 👑";
+        else if (rank === 2) crown = " 🥈";
+        else if (rank === 3) crown = " 🥉";
+
+        scoreBox.innerHTML = `평균 <b style="font-size: 1.35rem; color: #1d4ed8;">${avgFormatted}점</b>${crown}`;
+        if (rank === 1) {
+          const card = document.getElementById(`reveal-card-${tStat.team}`);
+          card.style.transform = "scale(1.03)";
+        }
+      }
+
+      if (step === order.length - 1) {
+        btn.innerText = "🎉 전체 순위 발표 완료! (다시 발표하기)";
+        revealInProgress = false;
+      }
+    }, delay);
+
+    delay += (step >= 4 ? 1400 : 900);
+  });
+}
+
+function renderPersonalTab() {
+  const classData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+  const studentSelect = document.getElementById('student-select');
+  studentSelect.innerHTML = '<option value="">-- 학생을 선택하세요 --</option>';
+
+  const sortedKeys = Object.keys(classData).sort();
+
+  sortedKeys.forEach(key => {
+    const s = classData[key];
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.innerText = `[${s.info.team}모둠] ${s.info.grade}-${s.info.classNum}-${s.info.num} ${s.info.name} (총 ${s.score}P / ${s.solved}문항 해결)`;
+    studentSelect.appendChild(opt);
+  });
+
+  const currentKey = `${studentInfo.grade}${String(studentInfo.classNum).padStart(2, '0')}${String(studentInfo.num).padStart(2, '0')}`;
+  if (classData[currentKey]) {
+    studentSelect.value = currentKey;
+    renderStudentHistory();
+  }
+}
+
+function renderStudentHistory() {
+  const studentKey = document.getElementById('student-select').value;
+  const tbody = document.getElementById('history-table-body');
+  tbody.innerHTML = '';
+
+  if (!studentKey) {
+    tbody.innerHTML = '<tr><td colspan="5" style="color: var(--text-muted);">조회할 학생을 선택해 주세요.</td></tr>';
+    return;
+  }
+
+  const classData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+  const record = classData[studentKey];
+
+  if (!record || !record.history || record.history.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="color: var(--text-muted);">풀이 이력이 아직 없습니다.</td></tr>';
+    return;
+  }
+
+  record.history.forEach((h, idx) => {
+    const tr = document.createElement('tr');
+    if (!h.passed || h.attempts.length > 1) {
+      tr.className = 'has-error';
+    }
+
+    const attemptStr = h.attempts.map((att, i) => `${i + 1}차: ${att}`).join('<br>');
+    const badge = h.passed ? '<span class="tag-pass">정답 해결</span>' : '<span class="tag-fail">3회 소진</span>';
+
+    tr.innerHTML = `
+      <td><b>${h.title}</b> (#${idx + 1})</td>
+      <td>${h.category}</td>
+      <td style="text-align: left; font-family: monospace;">${attemptStr}</td>
+      <td style="font-weight: 600; color: #1e40af;">${h.correctAnswer}</td>
+      <td>${badge}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') handleAction();
+});
+</script>
+</body>
+</html>
