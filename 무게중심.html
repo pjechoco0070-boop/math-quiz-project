@@ -358,6 +358,37 @@
     background: #334155;
   }
 
+
+  /* 음량 조절 컨트롤 스타일 */
+  .volume-control-box {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #ffffff;
+    border: 1px solid var(--border);
+    padding: 6px 14px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .volume-control-box .vol-icon {
+    font-size: 1.1rem;
+    cursor: pointer;
+    user-select: none;
+  }
+  .volume-control-box input[type="range"] {
+    width: 110px;
+    cursor: pointer;
+    accent-color: var(--primary);
+  }
+  .volume-control-box .vol-txt {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    min-width: 38px;
+    text-align: right;
+  }
+
 </style>
 </head>
 <body>
@@ -493,6 +524,14 @@
 
     <div id="pane-team" class="tab-pane active">
       <div class="ceremony-ctrl">
+        <!-- 음량 조절 바 -->
+        <div class="volume-control-box" title="효과음 및 배경음 음량 조절">
+          <span class="vol-icon" id="vol-icon-btn" onclick="toggleMute()">🔊</span>
+          <label for="sound-volume-slider" style="font-size:0.75rem; font-weight:700; color:var(--text-muted);">음량</label>
+          <input type="range" id="sound-volume-slider" min="0" max="1" step="0.05" value="0.8" oninput="setGlobalVolume(this.value)">
+          <span id="vol-percent-txt" class="vol-txt">80%</span>
+        </div>
+        <br>
         <button class="btn-reveal" id="btn-start-reveal" onclick="startRevealRankings()">
           ✨ 두근두근 모둠 순위 발표 시작! ✨
         </button>
@@ -1071,17 +1110,55 @@ let revealInProgress = false;
 
 // ================= Web Audio API 두근두근 BGM & 팡파르 효과음 =================
 let audioCtx = null;
+let masterGainNode = null;
 let suspenseInterval = null;
+let globalVolume = 0.8;
+let previousVolume = 0.8;
 
 function getAudioContext() {
   if (!audioCtx) {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     audioCtx = new AudioContext();
+    masterGainNode = audioCtx.createGain();
+    masterGainNode.gain.setValueAtTime(globalVolume, audioCtx.currentTime);
+    masterGainNode.connect(audioCtx.destination);
   }
   if (audioCtx.state === 'suspended') {
     audioCtx.resume();
   }
   return audioCtx;
+}
+
+// 음량 조절 및 음소거 함수
+function setGlobalVolume(val) {
+  globalVolume = parseFloat(val);
+  const percent = Math.round(globalVolume * 100);
+  document.getElementById('vol-percent-txt').innerText = percent + "%";
+
+  const icon = document.getElementById('vol-icon-btn');
+  if (globalVolume === 0) {
+    icon.innerText = "🔇";
+  } else if (globalVolume < 0.4) {
+    icon.innerText = "🔉";
+  } else {
+    icon.innerText = "🔊";
+  }
+
+  if (masterGainNode && audioCtx) {
+    masterGainNode.gain.setValueAtTime(globalVolume, audioCtx.currentTime);
+  }
+}
+
+function toggleMute() {
+  const slider = document.getElementById('sound-volume-slider');
+  if (globalVolume > 0) {
+    previousVolume = globalVolume;
+    slider.value = 0;
+    setGlobalVolume(0);
+  } else {
+    slider.value = previousVolume > 0 ? previousVolume : 0.8;
+    setGlobalVolume(slider.value);
+  }
 }
 
 // 심장 박동 / 북소리 (두근두근 긴장감 사운드)
@@ -1099,7 +1176,7 @@ function playHeartbeat(speedMult = 1.0) {
     gain1.gain.setValueAtTime(0.7, now);
     gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
     osc1.connect(gain1);
-    gain1.connect(ctx.destination);
+    gain1.connect(masterGainNode);
     osc1.start(now);
     osc1.stop(now + 0.16);
 
@@ -1112,7 +1189,7 @@ function playHeartbeat(speedMult = 1.0) {
     gain2.gain.setValueAtTime(0.5, now + 0.16);
     gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
     osc2.connect(gain2);
-    gain2.connect(ctx.destination);
+    gain2.connect(masterGainNode);
     osc2.start(now + 0.16);
     osc2.stop(now + 0.36);
   } catch(e) {}
@@ -1135,7 +1212,7 @@ function playRevealTing(rank) {
     gain.gain.setValueAtTime(0.4, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(masterGainNode);
     osc.start(now);
     osc.stop(now + 0.42);
   } catch(e) {}
@@ -1164,7 +1241,7 @@ function playVictoryFanfare() {
       gain.gain.setValueAtTime(0.45, now + n.time);
       gain.gain.exponentialRampToValueAtTime(0.001, now + n.time + n.dur);
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(masterGainNode);
       osc.start(now + n.time);
       osc.stop(now + n.time + n.dur + 0.05);
     });
