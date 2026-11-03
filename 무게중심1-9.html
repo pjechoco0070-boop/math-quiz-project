@@ -21,7 +21,7 @@
   body { background-color: var(--bg); color: var(--text); padding: 12px; min-height: 100vh; display: flex; flex-direction: column; align-items: center; touch-action: manipulation; }
   .container { width: 100%; max-width: 720px; position: relative; }
 
-/* 우측 상단 툴바 (다시 도전하기 + 교사모드) */
+  /* 우측 상단 툴바 (다시 도전하기 + 교사모드) */
   .top-right-bar {
     position: absolute;
     top: -2px;
@@ -358,7 +358,6 @@
     background: #334155;
   }
 
-
   /* 음량 조절 컨트롤 스타일 */
   .volume-control-box {
     display: inline-flex;
@@ -388,7 +387,6 @@
     min-width: 38px;
     text-align: right;
   }
-
 </style>
 </head>
 <body>
@@ -518,7 +516,7 @@
         <button id="btn-action" class="btn btn-submit" onclick="handleAction()">정답 확인 (Enter)</button>
       </div>
 
-            <div id="feedback-box" class="feedback"></div>
+      <div id="feedback-box" class="feedback"></div>
 
       <div style="text-align: center; margin-top: 16px; border-top: 1px dashed #e2e8f0; padding-top: 10px;">
         <button type="button" onclick="finishEarlyAndSubmit()" style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; padding: 7px 16px; font-size: 0.82rem; font-weight: 700; color: #475569; cursor: pointer; transition: all 0.2s;">
@@ -537,8 +535,7 @@
   </div>
 </div>
 
-
-<!-- 학생 정보 최종 확인 모달 (선생님 확인용) -->
+<!-- 학생 정보 최종 확인 모달 -->
 <div id="confirm-modal" class="teacher-modal" style="display: none; z-index: 150;">
   <div class="teacher-content" style="max-width: 440px; text-align: center; padding: 26px 22px;">
     <div style="font-size: 3rem; margin-bottom: 8px;">🧑‍🏫</div>
@@ -581,8 +578,7 @@
   </div>
 </div>
 
-
-<!-- 교사용 비밀번호 입력 전용 모달 (태블릿 숫자 노출 원천 차단형) -->
+<!-- 교사용 비밀번호 입력 전용 모달 -->
 <div id="auth-pin-modal" class="teacher-modal" style="display: none; z-index: 210;">
   <div class="teacher-content" style="max-width: 340px; text-align: center; padding: 24px 20px; border-radius: 20px;">
     <div style="font-size: 2.2rem; margin-bottom: 6px;">🔒</div>
@@ -590,7 +586,6 @@
     <p style="font-size: 0.82rem; color: #64748b; margin-bottom: 16px;">비밀번호를 입력하세요.</p>
     
     <div style="margin-bottom: 16px;">
-      <!-- type="text" + text-security: disc 속성을 통해 모바일 OS가 마지막 글자를 1초간 깜빡 노출하는 현상을 100% 원천 차단 -->
       <input type="text" id="teacher-pin-input" placeholder="비밀번호" autocomplete="off" inputmode="numeric"
              style="width: 100%; padding: 12px 14px; font-size: 1.4rem; text-align: center; letter-spacing: 6px; border: 2px solid var(--border); border-radius: 12px; outline: none; -webkit-text-security: disc; text-security: disc;"
              onkeydown="if(event.key==='Enter') submitTeacherAuth();" />
@@ -628,7 +623,6 @@
     </div>
 
     <div id="pane-team" class="tab-pane active">
-      <!-- 반별 & 회차별 필터 선택 바 및 구글 시트 동기화 버튼 -->
       <div style="background: #eff6ff; padding: 14px; border-radius: 14px; border: 1.5px solid #bfdbfe; margin-bottom: 14px; text-align: center;">
         <div style="display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; margin-bottom: 6px;">
           <div style="display: inline-flex; align-items: center; gap: 4px;">
@@ -657,7 +651,6 @@
       </div>
 
       <div class="ceremony-ctrl">
-        <!-- 음량 조절 바 -->
         <div class="volume-control-box" title="효과음 및 배경음 음량 조절">
           <span class="vol-icon" id="vol-icon-btn" onclick="toggleMute()">🔊</span>
           <label for="sound-volume-slider" style="font-size:0.75rem; font-weight:700; color:var(--text-muted);">음량</label>
@@ -709,12 +702,9 @@
 </div>
 
 <script>
-/* =======================================================================
-   선생님의 구글 앱스 스크립트(Google Apps Script) 배포 URL을 아래에 넣으세요!
-   ======================================================================= */
+/* Google Apps Script 배포 URL */
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby24pL6Ugkl9bPFFD8yVYnkqeoez18OuKf7AFCWgXR_ZYWAro50yI-1wapS1Q-ToaFA/exec";
 
-// 교사용 비밀번호 저장 키 (초기값 1234)
 const PIN_STORAGE_KEY = "TEACHER_PIN_VALUE_V2";
 if (!localStorage.getItem(PIN_STORAGE_KEY)) {
   localStorage.setItem(PIN_STORAGE_KEY, "3346222");
@@ -724,8 +714,6 @@ function getTeacherPin() {
   return localStorage.getItem(PIN_STORAGE_KEY) || "3346222";
 }
 
-
-// 교사용 대시보드 - 기기에 남아있는 이전 수업 데이터 전체 삭제(초기화)
 function clearAllClassData() {
   if (!confirm("⚠️ 주의: 이 기기에 저장된 이전 학급/학생들의 풀이 기록을 모두 삭제하고 새 수업을 시작하시겠습니까?\n(구글 스프레드시트에 이미 전송된 시트 내용은 지워지지 않습니다)")) {
     return;
@@ -733,7 +721,6 @@ function clearAllClassData() {
   localStorage.removeItem(STORAGE_KEY);
   alert("이전 수업 기록이 모두 초기화되었습니다! 이제 새로운 반 수업을 시작할 수 있습니다.");
   
-  // 대시보드 화면 새로고침
   updateClassSelectOptions();
   renderTeamTab();
   if (document.getElementById('pane-personal').classList.contains('active')) {
@@ -769,7 +756,7 @@ let timerInterval = null;
 let currentChances = 3;
 let isAnswered = false;
 let currentAttemptLogs = [];
-let studentHistoryLogs = []; // 구글 시트 전송용 풀이 누적 로그
+let studentHistoryLogs = [];
 
 const STORAGE_KEY = "MATH_CHALLENGE_CLASS_DATA_V4";
 
@@ -777,22 +764,18 @@ let canvas, ctx;
 let isDrawing = false;
 let currentTool = 'pen';
 
-
 function retryChallenge() {
-  // 퀴즈 진행 중일 경우 확인 팝업
   if (document.getElementById('quiz-area').style.display === 'block' && remainingSeconds > 0) {
     if (!confirm("현재 진행 중인 챌린지를 중단하고 처음부터 다시 도전하시겠습니까?")) {
       return;
     }
   }
 
-  // 타이머 중지 및 초기화
   if (timerInterval) {
     clearInterval(timerInterval);
     timerInterval = null;
   }
 
-  // 상태 초기화
   score = 0;
   totalSolved = 0;
   totalAttempts = 0;
@@ -802,12 +785,10 @@ function retryChallenge() {
   studentHistoryLogs = [];
   currentChances = 3;
 
-  // 화면 전환 (시작화면 보이기, 퀴즈 및 게임오버 숨기기)
   document.getElementById('quiz-area').style.display = 'none';
   document.getElementById('gameover').style.display = 'none';
   document.getElementById('start-screen').style.display = 'block';
 
-  // 피드백 및 캔버스 초기화
   const feedback = document.getElementById('feedback-box');
   if (feedback) {
     feedback.style.display = 'none';
@@ -824,15 +805,14 @@ function openStartConfirmModal() {
     document.getElementById('user-name').focus();
     return;
   }
-  studentInfo.grade = document.getElementById('user-grade').value;
-  studentInfo.classNum = document.getElementById('user-class').value;
-  studentInfo.num = document.getElementById('user-num').value;
+  studentInfo.grade = parseInt(document.getElementById('user-grade').value, 10);
+  studentInfo.classNum = parseInt(document.getElementById('user-class').value, 10);
+  studentInfo.num = parseInt(document.getElementById('user-num').value, 10);
   studentInfo.name = nameInput;
   studentInfo.team = parseInt(document.getElementById('user-team').value, 10);
   studentInfo.round = document.getElementById('user-round').value;
   studentInfo.minutes = parseFloat(document.getElementById('time-select').value);
 
-  // 확인 모달에 학생 정보 바인딩
   document.getElementById('conf-class-txt').innerText = `${studentInfo.grade}학년 ${studentInfo.classNum}반`;
   document.getElementById('conf-student-txt').innerText = `${studentInfo.num}번 ${studentInfo.name}`;
   document.getElementById('conf-team-txt').innerText = `${studentInfo.team}모둠`;
@@ -1139,7 +1119,6 @@ function saveProblemLog(isPassed) {
   };
   studentHistoryLogs.push(logItem);
 
-  // 로컬 브라우저에도 백업
   const studentKey = `${studentInfo.grade}${String(studentInfo.classNum).padStart(2, '0')}${String(studentInfo.num).padStart(2, '0')}`;
   let classData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
   if (!classData[studentKey]) {
@@ -1154,7 +1133,6 @@ function saveProblemLog(isPassed) {
   saveActiveSession();
 }
 
-// 챌린지 종료 및 구글 스프레드시트 실시간 전송
 function endChallenge() {
   document.getElementById('gameover').style.display = 'flex';
   document.getElementById('student-congrats').innerText = 
@@ -1177,7 +1155,6 @@ function finishEarlyAndSubmit() {
   }
 }
 
-/* 다인원 동시 접속 누락 방지 & 창 닫힘 자동 전송 / 세션 복원 시스템 */
 const SESSION_KEY = "MATH_ACTIVE_SESSION_V3";
 const OUTBOX_KEY = "MATH_SUBMISSION_OUTBOX_V3";
 
@@ -1412,7 +1389,6 @@ function initTeacherDashboard() {
   fetchSheetDataAndRefresh();
 }
 
-// 구글 스프레드시트로부터 전 학급 학생 데이터 실시간 로드
 let cloudStudentsList = [];
 let isCloudLoading = false;
 
@@ -1454,7 +1430,8 @@ function fetchSheetDataAndRefresh(autoSelectClass = null) {
       renderTeamTab();
     });
 }
-// 학급 선택 드롭다운 옵션 갱신 (구글 시트 데이터 + 로컬 데이터 통합)
+
+// [핵심 수정] 학급 드롭다운 목록 생성 시 숫자/문자열 자동 보정
 function updateClassSelectOptions(targetClassKey = null) {
   const classSelect = document.getElementById('team-class-select');
   if (!classSelect) return;
@@ -1464,35 +1441,36 @@ function updateClassSelectOptions(targetClassKey = null) {
 
   const classMap = new Map();
 
-  // 1. 구글 시트에서 가져온 학생 데이터 반영 (가장 중요 ⭐)
   if (cloudStudentsList && cloudStudentsList.length > 0) {
     cloudStudentsList.forEach(s => {
-      if (s.grade && s.classNum) {
-        const key = `${s.grade}-${s.classNum}`;
-        const label = `${s.grade}학년 ${s.classNum}반 (${key === '2-4' ? '실제 수업반' : ''})`;
-        classMap.set(key, `${s.grade}학년 ${s.classNum}반`);
+      const g = parseInt(s.grade, 10);
+      const c = parseInt(s.classNum, 10);
+      if (!isNaN(g) && !isNaN(c)) {
+        const key = `${g}-${c}`;
+        classMap.set(key, `${g}학년 ${c}반`);
       }
     });
   }
 
-  // 2. 로컬 브라우저에 저장된 데이터도 백업으로 반영
   const classData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
   Object.values(classData).forEach(s => {
     if (s.info && s.info.grade && s.info.classNum) {
-      const key = `${s.info.grade}-${s.info.classNum}`;
-      if (!classMap.has(key)) {
-        classMap.set(key, `${s.info.grade}학년 ${s.info.classNum}반`);
+      const g = parseInt(s.info.grade, 10);
+      const c = parseInt(s.info.classNum, 10);
+      if (!isNaN(g) && !isNaN(c)) {
+        const key = `${g}-${c}`;
+        if (!classMap.has(key)) {
+          classMap.set(key, `${g}학년 ${c}반`);
+        }
       }
     }
   });
 
-  // 목록이 하나도 없으면 현재 입력창 기준
   if (classMap.size === 0) {
     const defaultKey = `${studentInfo.grade}-${studentInfo.classNum}`;
     classMap.set(defaultKey, `${studentInfo.grade}학년 ${studentInfo.classNum}반`);
   }
 
-  // 정렬 (학년 오름차순, 반 오름차순)
   const sortedClassKeys = Array.from(classMap.keys()).sort((a, b) => {
     const [g1, c1] = a.split('-').map(Number);
     const [g2, c2] = b.split('-').map(Number);
@@ -1509,7 +1487,6 @@ function updateClassSelectOptions(targetClassKey = null) {
   if (currentSelection && classMap.has(currentSelection)) {
     classSelect.value = currentSelection;
   } else if (sortedClassKeys.length > 0) {
-    // 4반 등 제출 데이터가 있는 가장 적절한 반 자동 선택
     classSelect.value = sortedClassKeys[sortedClassKeys.length - 1];
   }
 }
@@ -1517,6 +1494,7 @@ function updateClassSelectOptions(targetClassKey = null) {
 let sortedTeamStats = [];
 let currentSelectedClassLabel = "";
 
+// [핵심 수정] 학년, 반, 모둠, 회차 매칭 완벽 보정 로직
 function renderTeamTab() {
   const classSelect = document.getElementById('team-class-select');
   const roundSelect = document.getElementById('team-round-select');
@@ -1526,7 +1504,7 @@ function renderTeamTab() {
 
   const selectedClassKey = classSelect && classSelect.value ? classSelect.value : `${studentInfo.grade}-${studentInfo.classNum}`;
   const baseClassLabel = classSelect && classSelect.selectedOptions[0] ? classSelect.selectedOptions[0].innerText : `${studentInfo.grade}학년 ${studentInfo.classNum}반`;
-  const selectedRound = roundSelect ? roundSelect.value : '1회차';
+  const selectedRound = roundSelect ? roundSelect.value.trim() : '1회차';
   const roundLabel = selectedRound === 'all' ? '전체회차' : selectedRound;
 
   currentSelectedClassLabel = `${baseClassLabel} [${roundLabel}]`;
@@ -1536,36 +1514,59 @@ function renderTeamTab() {
     stats[t] = { team: t, totalScore: 0, memberCount: 0, avgScore: 0 };
   }
 
-  // 구글 시트에서 가져온 데이터 우선 계산 (반 + 회차 필터링!)
   if (cloudStudentsList && cloudStudentsList.length > 0) {
     cloudStudentsList.forEach(s => {
-      const k = `${s.grade}-${s.classNum}`;
-      const sRound = s.round || '1회차';
+      const g = parseInt(s.grade, 10);
+      const c = parseInt(s.classNum, 10);
+      const k = `${g}-${c}`;
+      
+      const sRound = String(s.round || '1회차').trim();
+      
+      // 구글 시트에 "1모둠" 또는 "1"로 적혀 있어도 숫자만 안전하게 추출
+      let t = 0;
+      if (typeof s.team === 'number') {
+        t = s.team;
+      } else {
+        const parsed = parseInt(String(s.team).replace(/[^0-9]/g, ''), 10);
+        t = isNaN(parsed) ? 0 : parsed;
+      }
+
+      const sScore = parseFloat(s.score) || 0;
+
       if (k === selectedClassKey && (selectedRound === 'all' || sRound === selectedRound)) {
-        const t = s.team || 1;
         if (t >= 1 && t <= 7) {
-          stats[t].totalScore += s.score;
+          stats[t].totalScore += sScore;
           stats[t].memberCount += 1;
         }
       }
     });
   } else {
-    // 오프라인 로컬 데이터 백업 계산
     const classData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     Object.values(classData).forEach(s => {
-      const k = `${s.info.grade}-${s.info.classNum}`;
-      const sRound = s.info.round || '1회차';
+      const g = parseInt(s.info.grade, 10);
+      const c = parseInt(s.info.classNum, 10);
+      const k = `${g}-${c}`;
+      const sRound = String(s.info.round || '1회차').trim();
+      
+      let t = 0;
+      if (typeof s.info.team === 'number') {
+        t = s.info.team;
+      } else {
+        const parsed = parseInt(String(s.info.team).replace(/[^0-9]/g, ''), 10);
+        t = isNaN(parsed) ? 0 : parsed;
+      }
+
+      const sScore = parseFloat(s.score) || 0;
+
       if (k === selectedClassKey && (selectedRound === 'all' || sRound === selectedRound)) {
-        const t = s.info.team || 1;
         if (t >= 1 && t <= 7) {
-          stats[t].totalScore += s.score;
+          stats[t].totalScore += sScore;
           stats[t].memberCount += 1;
         }
       }
     });
   }
 
-  // 평균 점수 계산
   for (let t = 1; t <= 7; t++) {
     stats[t].avgScore = stats[t].memberCount > 0 ? (stats[t].totalScore / stats[t].memberCount) : 0;
   }
@@ -1575,12 +1576,10 @@ function renderTeamTab() {
   const container = document.getElementById('team-reveal-container');
   container.innerHTML = '';
 
-  // [순위 사전 유출 원천 차단] 성적순이 아닌 1모둠부터 7모둠 순서대로 고정 배치!
   for (let t = 1; t <= 7; t++) {
     const tStat = stats[t];
     const card = document.createElement('div');
     card.id = `reveal-card-${t}`;
-    // 초기에는 1등 금색/은색 등 힌트가 일절 없는 중립 클래스만 적용
     card.className = 'reveal-card';
     card.innerHTML = `
       <div class="rank-badge" id="rank-badge-${t}">?</div>
@@ -1602,8 +1601,7 @@ function renderTeamTab() {
 
 let revealInProgress = false;
 
-
-// ================= Web Audio API 두근두근 BGM & 팡파르 효과음 =================
+/* ================= Audio & Ceremony ================= */
 let audioCtx = null;
 let masterGainNode = null;
 let suspenseInterval = null;
@@ -1624,7 +1622,6 @@ function getAudioContext() {
   return audioCtx;
 }
 
-// 음량 조절 및 음소거 함수
 function setGlobalVolume(val) {
   globalVolume = parseFloat(val);
   const percent = Math.round(globalVolume * 100);
@@ -1656,13 +1653,11 @@ function toggleMute() {
   }
 }
 
-// 심장 박동 / 북소리 (두근두근 긴장감 사운드)
 function playHeartbeat(speedMult = 1.0) {
   try {
     const ctx = getAudioContext();
     const now = ctx.currentTime;
 
-    // 첫 번째 쿵 (두-)
     const osc1 = ctx.createOscillator();
     const gain1 = ctx.createGain();
     osc1.type = 'triangle';
@@ -1675,7 +1670,6 @@ function playHeartbeat(speedMult = 1.0) {
     osc1.start(now);
     osc1.stop(now + 0.16);
 
-    // 두 번째 쿵 (-근)
     const osc2 = ctx.createOscillator();
     const gain2 = ctx.createGain();
     osc2.type = 'sine';
@@ -1690,7 +1684,6 @@ function playHeartbeat(speedMult = 1.0) {
   } catch(e) {}
 }
 
-// 순위 오픈 찰칵/종 효과음
 function playRevealTing(rank) {
   try {
     const ctx = getAudioContext();
@@ -1698,7 +1691,6 @@ function playRevealTing(rank) {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     
-    // 순위가 높을수록 톤이 올라감
     const freqs = [350, 420, 500, 590, 700, 840, 1050];
     const f = freqs[7 - rank] || 550;
 
@@ -1713,19 +1705,18 @@ function playRevealTing(rank) {
   } catch(e) {}
 }
 
-// 최종 1등 팡파르 효과음 (Fanfare)
 function playVictoryFanfare() {
   try {
     const ctx = getAudioContext();
     const now = ctx.currentTime;
     const notes = [
-      { f: 523.25, time: 0.0, dur: 0.15 }, // C5
-      { f: 523.25, time: 0.16, dur: 0.15 },// C5
-      { f: 523.25, time: 0.32, dur: 0.15 },// C5
-      { f: 659.25, time: 0.48, dur: 0.35 },// E5
-      { f: 587.33, time: 0.85, dur: 0.2 }, // D5
-      { f: 659.25, time: 1.05, dur: 0.2 }, // E5
-      { f: 783.99, time: 1.25, dur: 0.8 }  // G5 (길게)
+      { f: 523.25, time: 0.0, dur: 0.15 },
+      { f: 523.25, time: 0.16, dur: 0.15 },
+      { f: 523.25, time: 0.32, dur: 0.15 },
+      { f: 659.25, time: 0.48, dur: 0.35 },
+      { f: 587.33, time: 0.85, dur: 0.2 },
+      { f: 659.25, time: 1.05, dur: 0.2 },
+      { f: 783.99, time: 1.25, dur: 0.8 }
     ];
 
     notes.forEach(n => {
@@ -1746,7 +1737,6 @@ function playVictoryFanfare() {
 function startSuspenseBGM() {
   stopSuspenseBGM();
   playHeartbeat();
-  // 600ms 간격으로 두근두근 심장 박동 반복
   suspenseInterval = setInterval(() => {
     playHeartbeat();
   }, 620);
@@ -1759,7 +1749,6 @@ function stopSuspenseBGM() {
   }
 }
 
-// 1등 팝업 띄우기 및 닫기
 function showWinnerModal(firstTeamStat) {
   stopSuspenseBGM();
   playVictoryFanfare();
@@ -1778,7 +1767,6 @@ function closeWinnerModal() {
   document.getElementById('winner-modal').style.display = 'none';
 }
 
-// 발표 전/재발표 시 모든 모둠의 점수 및 총점을 완전히 가리는 함수
 function hideAllRankings() {
   stopSuspenseBGM();
   closeWinnerModal();
@@ -1868,12 +1856,19 @@ function renderPersonalTab() {
   const studentSelect = document.getElementById('student-select');
   studentSelect.innerHTML = '<option value="">-- 학생을 선택하세요 --</option>';
 
-  // 구글 시트 데이터가 있으면 시트 학생 목록 표시
   if (cloudStudentsList && cloudStudentsList.length > 0) {
     const sortedCloud = [...cloudStudentsList].sort((a, b) => {
-      if (a.grade !== b.grade) return a.grade - b.grade;
-      if (a.classNum !== b.classNum) return a.classNum - b.classNum;
-      return a.num - b.num;
+      const ga = parseInt(a.grade, 10) || 0;
+      const gb = parseInt(b.grade, 10) || 0;
+      if (ga !== gb) return ga - gb;
+      
+      const ca = parseInt(a.classNum, 10) || 0;
+      const cb = parseInt(b.classNum, 10) || 0;
+      if (ca !== cb) return ca - cb;
+
+      const na = parseInt(a.num, 10) || 0;
+      const nb = parseInt(b.num, 10) || 0;
+      return na - nb;
     });
 
     sortedCloud.forEach((s, idx) => {
@@ -1888,7 +1883,6 @@ function renderPersonalTab() {
       renderStudentHistory();
     }
   } else {
-    // 로컬 데이터 표시
     const classData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     const sortedKeys = Object.keys(classData).sort();
     sortedKeys.forEach(key => {
