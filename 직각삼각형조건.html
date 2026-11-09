@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>피타고라스 정리의 역과 삼각형의 판정 탐구기</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Noto Sans KR, KaTeX for math styling -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;800&family=KaTeX_Main:wght@400;700&display=swap">
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      touch-action: manipulation;
+    }
+    .math-font {
+      font-family: 'KaTeX_Main', 'Times New Roman', serif;
+    }
+    canvas {
+      user-select: none;
+      -webkit-user-select: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-between">
+
+  <!-- 상단 네비게이션 헤더 -->
+  <header class="bg-white border-b border-slate-200 px-4 py-3 shadow-sm sticky top-0 z-20">
+    <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center space-x-2">
+        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-white font-bold text-lg shadow">📐</span>
+        <div>
+          <h1 class="font-bold text-slate-900 text-base md:text-lg leading-tight">삼각형의 변과 각의 관계 & 직각삼각형 판정</h1>
+          <p class="text-xs text-slate-500 hidden sm:block">꼭짓점 A를 원호 위에서 자유롭게 드래그해보세요!</p>
+        </div>
+      </div>
+      <!-- 상태 뱃지 표시 -->
+      <div id="statusBadge" class="flex items-center px-3.5 py-1.5 rounded-full text-sm font-bold shadow-sm transition-all duration-300 bg-amber-100 text-amber-800 border border-amber-300">
+        <span id="badgeIcon" class="mr-1.5">📐</span>
+        <span id="badgeText">직각삼각형 (∠C = 90°)</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 메인 작업 영역 -->
+  <main class="max-w-6xl w-full mx-auto p-3 sm:p-5 flex-1 flex flex-col lg:flex-row gap-5 items-stretch">
+    
+    <!-- 좌측/상단: 캔버스 시각화 영역 -->
+    <div class="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 p-4 flex flex-col justify-between">
+      
+      <!-- 상단 컨트롤 바 -->
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-3 pb-3 border-b border-slate-100 text-xs sm:text-sm text-slate-600 font-medium">
+        <div class="flex items-center gap-3">
+          <label class="flex items-center gap-1.5 cursor-pointer hover:text-slate-900">
+            <input type="checkbox" id="chkSnap90" checked class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+            <span>직각(90°) 자동 자석스냅</span>
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer hover:text-slate-900">
+            <input type="checkbox" id="chkShowArc" checked class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+            <span>궤적(원호) 표시</span>
+          </label>
+        </div>
+        <div class="text-slate-400 text-xs flex items-center">
+          <span class="inline-block w-2.5 h-2.5 rounded-full bg-red-500 mr-1 animate-pulse"></span>
+          점 A를 드래그하여 조절 가능
+        </div>
+      </div>
+
+      <!-- 캔버스 컨테이너 -->
+      <div id="canvasContainer" class="relative w-full flex-1 min-h-[340px] sm:min-h-[420px] bg-slate-50/60 rounded-xl overflow-hidden border border-slate-200/80 shadow-inner flex items-center justify-center">
+        <canvas id="geometryCanvas" class="w-full h-full block cursor-grab active:cursor-grabbing"></canvas>
+      </div>
+
+      <!-- 각도 조절 슬라이더 및 프리셋 버튼군 -->
+      <div class="mt-4 pt-3 border-t border-slate-100 space-y-3">
+        <!-- 슬라이더 -->
+        <div class="flex items-center gap-3">
+          <span class="text-xs sm:text-sm font-semibold text-slate-700 whitespace-nowrap min-w-[70px]">
+            각 C 크기: <span id="angleValueText" class="text-indigo-600 font-bold">90.0°</span>
+          </span>
+          <input type="range" id="angleSlider" min="15" max="165" step="0.5" value="90" 
+                 class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 focus:outline-none">
+        </div>
+
+        <!-- 교과서 3가지 대표 케이스 바로가기 버튼군 -->
+        <div class="grid grid-cols-3 gap-2">
+          <button id="btnCaseAcute" class="py-2 px-2.5 rounded-xl border border-blue-200 bg-blue-50/70 hover:bg-blue-100/80 active:scale-95 text-blue-800 font-semibold text-xs sm:text-sm flex flex-col items-center justify-center transition shadow-xs">
+            <span class="text-[11px] text-blue-600 font-normal">그림 1 · 예각</span>
+            <span>c = 4 (3, 4, 4)</span>
+          </button>
+          <button id="btnCaseRight" class="py-2 px-2.5 rounded-xl border-2 border-amber-400 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 font-bold text-xs sm:text-sm flex flex-col items-center justify-center transition shadow-sm">
+            <span class="text-[11px] text-amber-700 font-medium">그림 2 · 직각</span>
+            <span>c = 5 (3, 4, 5)</span>
+          </button>
+          <button id="btnCaseObtuse" class="py-2 px-2.5 rounded-xl border border-rose-200 bg-rose-50/70 hover:bg-rose-100/80 active:scale-95 text-rose-800 font-semibold text-xs sm:text-sm flex flex-col items-center justify-center transition shadow-xs">
+            <span class="text-[11px] text-rose-600 font-normal">그림 3 · 둔각</span>
+            <span>c = 6 (3, 4, 6)</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 우측/하단: 수식 및 판정 분석 영역 -->
+    <div class="w-full lg:w-[410px] flex flex-col gap-4">
+      
+      <!-- 교과서 수식 비교 카드 -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+        <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wide mb-3 flex items-center justify-between">
+          <span>변의 길이 관계식 판정</span>
+          <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono">BC=3, AC=4</span>
+        </h2>
+
+        <!-- 메인 부등식 / 등식 디스플레이 -->
+        <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 flex flex-col items-center justify-center my-1">
+          <div class="flex items-center justify-center gap-2 sm:gap-3 text-xl sm:text-2xl font-bold math-font select-none">
+            <!-- 좌변: 3² + 4² -->
+            <div class="flex items-center text-slate-800">
+              <span>3<sup>2</sup></span>
+              <span class="mx-1 text-slate-400">+</span>
+              <span>4<sup>2</sup></span>
+            </div>
+
+            <!-- 가운데 비교 원 (동그라미 기호) -->
+            <div id="circleSymbolBox" class="w-10 h-10 sm:w-11 sm:h-11 rounded-full border-2 border-amber-500 bg-amber-50 text-amber-700 flex items-center justify-center text-xl sm:text-2xl font-extrabold shadow-sm transition-all transform duration-200">
+              =
+            </div>
+
+            <!-- 우변: c² -->
+            <div class="flex items-center text-red-600">
+              <span id="cSquaredText">5<sup>2</sup></span>
+            </div>
+          </div>
+
+          <!-- 실제 계산값 비교 행 -->
+          <div class="mt-3 pt-2.5 border-t border-slate-200/80 w-full flex items-center justify-center gap-4 text-xs sm:text-sm font-mono font-medium text-slate-600">
+            <div class="text-right">
+              <span class="text-slate-400">9 + 16 = </span>
+              <span class="font-bold text-slate-800">25</span>
+            </div>
+            <div id="evalSymbolSmall" class="font-bold text-amber-600 text-base">=</div>
+            <div>
+              <span class="text-slate-400">c² = </span>
+              <span id="cSquaredValue" class="font-bold text-red-600">25.00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 변 및 각도 상세 측정표 -->
+        <div class="grid grid-cols-3 gap-2 mt-4 text-center">
+          <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+            <span class="block text-[11px] text-slate-500 font-medium">밑변 BC (a)</span>
+            <span class="font-bold text-slate-800 text-base">3</span>
+          </div>
+          <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+            <span class="block text-[11px] text-slate-500 font-medium">변 AC (b)</span>
+            <span class="font-bold text-slate-800 text-base">4</span>
+          </div>
+          <div class="bg-red-50/80 p-2.5 rounded-xl border border-red-200">
+            <span class="block text-[11px] text-red-600 font-semibold">대변 AB (c)</span>
+            <span id="cLengthText" class="font-extrabold text-red-700 text-base">5.00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 교과서 원리 정리 & 개념 카드 -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex-1 flex flex-col justify-between">
+        <div>
+          <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center">
+            <span class="w-1.5 h-4 bg-indigo-600 rounded-full mr-2"></span>
+            피타고라스 정리의 역 & 삼각형 판정
+          </h3>
+
+          <ul class="space-y-2.5 text-xs sm:text-sm text-slate-600 leading-relaxed">
+            <li id="ruleAcute" class="p-2.5 rounded-lg border border-transparent transition-colors">
+              <span class="font-bold text-blue-700">1. 예각삼각형 (∠C &lt; 90°)</span>
+              <div class="text-xs text-slate-500 mt-0.5 math-font">
+                a² + b² &gt; c² &nbsp; <span class="text-slate-400 font-sans">(예: 3² + 4² &gt; 4², 25 &gt; 16)</span>
+              </div>
+            </li>
+            <li id="ruleRight" class="p-2.5 rounded-lg border border-transparent transition-colors">
+              <span class="font-bold text-amber-700">2. 직각삼각형 (∠C = 90°)</span>
+              <div class="text-xs text-slate-500 mt-0.5 math-font">
+                a² + b² = c² &nbsp; <span class="text-slate-400 font-sans">(예: 3² + 4² = 5², 25 = 25)</span>
+              </div>
+            </li>
+            <li id="ruleObtuse" class="p-2.5 rounded-lg border border-transparent transition-colors">
+              <span class="font-bold text-rose-700">3. 둔각삼각형 (∠C &gt; 90°)</span>
+              <div class="text-xs text-slate-500 mt-0.5 math-font">
+                a² + b² &lt; c² &nbsp; <span class="text-slate-400 font-sans">(예: 3² + 4² &lt; 6², 25 &lt; 36)</span>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <!-- 하단 교과 팁 안내 -->
+        <div class="mt-4 p-3 bg-amber-50/70 border border-amber-200 rounded-xl text-[11px] sm:text-xs text-amber-800 leading-tight">
+          💡 <strong>핵심 개념:</strong> 두 변의 길이(3과 4)가 고정되어 있을 때, 그 사이 각 $C$가 커질수록 대변 $c$의 길이가 길어지며, 오직 <strong>$a^2 + b^2 = c^2$</strong>일 때만 $\angle C$가 정확히 <strong>$90^\circ$인 직각삼각형</strong>이 됩니다.
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="py-2.5 text-center text-xs text-slate-400 border-t border-slate-200 bg-white">
+    중학 수학 2학년 / 3학년 피타고라스 정리와 삼각형의 성질 인터랙티브 시각화 도구
+  </footer>
+
+  <script>
+    // 상수 및 상태 관리
+    const state = {
+      a: 3,             // 밑변 BC = 3
+      b: 4,             // 변 AC = 4
+      angleDeg: 90.0,   // 각 C (degree, 15° ~ 165°)
+      isDragging: false,
+      snapThreshold: 1.8, // 90도 근처에서 자석 스냅할 각도 오차
+      snapEnabled: true,
+      showArc: true
+    };
+
+    // DOM 요소 캐싱
+    const canvas = document.getElementById('geometryCanvas');
+    const ctx = canvas.getContext('2d');
+    const container = document.getElementById('canvasContainer');
+
+    const angleSlider = document.getElementById('angleSlider');
+    const angleValueText = document.getElementById('angleValueText');
+    const chkSnap90 = document.getElementById('chkSnap90');
+    const chkShowArc = document.getElementById('chkShowArc');
+
+    const statusBadge = document.getElementById('statusBadge');
+    const badgeIcon = document.getElementById('badgeIcon');
+    const badgeText = document.getElementById('badgeText');
+
+    const circleSymbolBox = document.getElementById('circleSymbolBox');
+    const cSquaredText = document.getElementById('cSquaredText');
+    const evalSymbolSmall = document.getElementById('evalSymbolSmall');
+    const cSquaredValue = document.getElementById('cSquaredValue');
+    const cLengthText = document.getElementById('cLengthText');
+
+    const ruleAcute = document.getElementById('ruleAcute');
+    const ruleRight = document.getElementById('ruleRight');
+    const ruleObtuse = document.getElementById('ruleObtuse');
+
+    const btnCaseAcute = document.getElementById('btnCaseAcute');
+    const btnCaseRight = document.getElementById('btnCaseRight');
+    const btnCaseObtuse = document.getElementById('btnCaseObtuse');
+
+    // 기하 계산 변수
+    let originC = { x: 0, y: 0 };
+    let unitScale = 45; // 1 단위 길이의 픽셀 수 (화면 리사이즈 시 동적 조정)
+
+    function resizeCanvas() {
+      const rect = container.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      // 점 C의 위치 설정: 화면 우하단에서 적절한 여백을 둠
+      // 삼각형이 B(왼쪽), C(오른쪽 기준), A(회전)이므로 C는 중심보다 약간 오른쪽에 배치
+      unitScale = Math.min(rect.width / 8.5, rect.height / 6.2);
+      
+      // C의 위치: B는 C에서 왼쪽으로 3단위 (a=3)
+      originC = {
+        x: rect.width * 0.58,
+        y: rect.height * 0.78
+      };
+
+      draw();
+    }
+
+    // 꼭짓점 좌표 계산
+    function getVertices() {
+      // 점 C (원점 기준)
+      const C = { x: originC.x, y: originC.y };
+
+      // 점 B: C에서 왼쪽으로 a=3 단위
+      const B = { x: originC.x - state.a * unitScale, y: originC.y };
+
+      // 점 A: C를 중심으로 각도 angleDeg(각 C)만큼 회전
+      // 수학 좌표계(위가 y+)에서 각 C: C에서 B 방향이 180도 (음의 x축)
+      // 따라서 A는 C를 기준으로 (180 - angleDeg) 방향
+      const radFromPositiveX = (180 - state.angleDeg) * (Math.PI / 180);
+      const A = {
+        x: originC.x + state.b * unitScale * Math.cos(radFromPositiveX),
+        y: originC.y - state.b * unitScale * Math.sin(radFromPositiveX) // 화면 좌표는 y가 아래로 증가
+      };
+
+      return { A, B, C };
+    }
+
+    // 점 c 길이 계산 (제이코사인법칙: c^2 = a^2 + b^2 - 2ab*cos(C))
+    function calculateSides() {
+      const a = state.a;
+      const b = state.b;
+      const rad = state.angleDeg * (Math.PI / 180);
+      const cSq = a * a + b * b - 2 * a * b * Math.cos(rad);
+      const c = Math.sqrt(Math.max(0, cSq));
+      const a2b2 = a * a + b * b; // 25
+      return { a, b, c, cSq, a2b2 };
+    }
+
+    // 화면 렌더링 함수
+    function draw() {
+      const w = canvas.width / (window.devicePixelRatio || 1);
+      const h = canvas.height / (window.devicePixelRatio || 1);
+
+      ctx.clearRect(0, 0, w, h);
+
+      const { A, B, C } = getVertices();
+      const { c, cSq, a2b2 } = calculateSides();
+
+      // 1. 교과서 모눈종이(Grid) 그리기
+      drawGrid(w, h);
+
+      // 2. 점 A의 반지름 4 궤적(원호) 표시
+      if (state.showArc) {
+        drawArcTrajectory(C);
+      }
+
+      // 3. 교과서 점선 둥근 호 가이드 (3, 4, c 변 주위의 교과서풍 점선 표현)
+      drawDimensionDecorations(A, B, C);
+
+      // 4. 각 C 호 및 직각 표시 기호
+      drawAngleC(A, B, C);
+
+      // 5. 삼각형 본체 그리기 (밑변 BC, 변 AC, 대변 AB)
+      drawTriangleEdges(A, B, C);
+
+      // 6. 꼭짓점 (A, B, C) 및 드래그 핸들 그리기
+      drawVerticesAndLabels(A, B, C);
+
+      // 7. UI 및 수식 업데이트
+      updateMathUI(c, cSq, a2b2);
+    }
+
+    // 모눈종이 렌더링
+    function drawGrid(w, h) {
+      ctx.save();
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+
+      // C점을 기준으로 모눈 정렬
+      const step = unitScale;
+      
+      const startX = (originC.x % step);
+      for (let x = startX; x < w; x += step) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+
+      const startY = (originC.y % step);
+      for (let y = startY; y < h; y += step) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // 점 A의 궤적 (반지름 4인 원호)
+    function drawArcTrajectory(C) {
+      ctx.save();
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+
+      const r = state.b * unitScale;
+      // 15도에서 165도 사이 궤적
+      const startRad = (180 - 165) * (Math.PI / 180);
+      const endRad = (180 - 15) * (Math.PI / 180);
+
+      ctx.beginPath();
+      ctx.arc(C.x, C.y, r, -endRad, -startRad);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // 교과서 스타일의 변 옆 점선 곡선 및 길이 라벨 (그림 속 점선 타원형 가이드 느낌)
+    function drawDimensionDecorations(A, B, C) {
+      ctx.save();
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([3, 3]);
+
+      // 밑변 BC 아래 점선 호
+      drawCurvedDashedLabel(B, C, 16, "3", '#475569');
+
+      // 변 AC 오른쪽 점선 호
+      drawCurvedDashedLabel(C, A, 18, "4", '#475569');
+
+      // 변 AB 위쪽 점선 호 (빨간선 대변)
+      const { c } = calculateSides();
+      const cLabel = Math.abs(c - Math.round(c)) < 0.05 ? Math.round(c).toString() : c.toFixed(2);
+      drawCurvedDashedLabel(A, B, 18, cLabel, '#dc2626');
+
+      ctx.restore();
+    }
+
+    // 두 점 사이 외곽에 점선 호와 텍스트를 그리는 헬퍼 함수
+    function drawCurvedDashedLabel(p1, p2, offset, text, textColor) {
+      const mx = (p1.x + p2.x) / 2;
+      const my = (p1.y + p2.y) / 2;
+      const dx = p2.x - p1.x;
+      const dy = p2.y - p1.y;
+      const len = Math.hypot(dx, dy);
+      if (len === 0) return;
+
+      // 법선 벡터 (바깥 방향)
+      const nx = -dy / len;
+      const ny = dx / len;
+
+      const cx = mx + nx * offset;
+      const cy = my + ny * offset;
+
+      ctx.save();
+      ctx.strokeStyle = '#94a3b8';
+      ctx.setLineDash([3, 3]);
+      ctx.lineWidth = 1.2;
+
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.quadraticCurveTo(cx, cy, p2.x, p2.y);
+      ctx.stroke();
+
+      // 텍스트 배경 및 라벨 출력
+      ctx.font = 'bold 13px Noto Sans KR, sans-serif';
+      ctx.fillStyle = textColor;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // 텍스트 위치를 살짝 외곽으로
+      const tx = mx + nx * (offset * 1.3);
+      const ty = my + ny * (offset * 1.3);
+
+      ctx.fillText(text, tx, ty);
+      ctx.restore();
+    }
+
+    // 각 C 표시 (직각 기호 또는 부채꼴 호)
+    function drawAngleC(A, B, C) {
+      const isRight = Math.abs(state.angleDeg - 90) < 0.5;
+
+      if (isRight) {
+        // 교과서 스타일 직각 네모 기호
+        const s = 18;
+        ctx.save();
+        ctx.strokeStyle = '#e11d48';
+        ctx.fillStyle = 'rgba(225, 29, 72, 0.15)';
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.moveTo(C.x - s, C.y);
+        ctx.lineTo(C.x - s, C.y - s);
+        ctx.lineTo(C.x, C.y - s);
+        ctx.stroke();
+        ctx.fillRect(C.x - s, C.y - s, s, s);
+        ctx.restore();
+      } else {
+        // 일반 각도 호
+        const r = 26;
+        const radA = Math.atan2(A.y - C.y, A.x - C.x);
+        const radB = Math.atan2(B.y - C.y, B.x - C.x); // 항상 Math.PI
+
+        ctx.save();
+        ctx.strokeStyle = state.angleDeg > 90 ? '#e11d48' : '#2563eb';
+        ctx.fillStyle = state.angleDeg > 90 ? 'rgba(225, 29, 72, 0.1)' : 'rgba(37, 99, 235, 0.1)';
+        ctx.lineWidth = 1.8;
+
+        ctx.beginPath();
+        ctx.moveTo(C.x, C.y);
+        ctx.arc(C.x, C.y, r, radB, radA, false);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.restore();
+      }
+    }
+
+    // 삼각형 변 그리기
+    function drawTriangleEdges(A, B, C) {
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      // 1. 밑변 BC (길이 3, 검정색)
+      ctx.beginPath();
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 3.5;
+      ctx.moveTo(B.x, B.y);
+      ctx.lineTo(C.x, C.y);
+      ctx.stroke();
+
+      // 2. 변 AC (길이 4, 검정색)
+      ctx.beginPath();
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 3.5;
+      ctx.moveTo(C.x, C.y);
+      ctx.lineTo(A.x, A.y);
+      ctx.stroke();
+
+      // 3. 대변 AB (길이 c, 교과서처럼 선명한 붉은색)
+      ctx.beginPath();
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 4;
+      ctx.moveTo(B.x, B.y);
+      ctx.lineTo(A.x, A.y);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    // 꼭짓점 및 명칭(A, B, C) 표시
+    function drawVerticesAndLabels(A, B, C) {
+      ctx.save();
+      ctx.font = 'bold 16px Noto Sans KR, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // 점 B
+      drawPoint(B.x, B.y, '#1e293b', 4.5);
+      ctx.fillStyle = '#1e293b';
+      ctx.fillText('B', B.x - 14, B.y + 16);
+
+      // 점 C
+      drawPoint(C.x, C.y, '#1e293b', 4.5);
+      ctx.fillText('C', C.x + 14, C.y + 16);
+
+      // 점 A (드래그 가능한 강조 핸들)
+      const isRight = Math.abs(state.angleDeg - 90) < 0.5;
+      const pointColor = isRight ? '#f59e0b' : '#ef4444';
+
+      // 외곽 링 효과
+      ctx.beginPath();
+      ctx.arc(A.x, A.y, 14, 0, Math.PI * 2);
+      ctx.fillStyle = isRight ? 'rgba(245, 158, 11, 0.2)' : 'rgba(239, 68, 68, 0.2)';
+      ctx.fill();
+
+      // 중심 점
+      drawPoint(A.x, A.y, pointColor, 7);
+      drawPoint(A.x, A.y, '#ffffff', 3);
+
+      // 레이블 A
+      ctx.fillStyle = '#0f172a';
+      ctx.fillText('A', A.x, A.y - 18);
+
+      ctx.restore();
+    }
+
+    function drawPoint(x, y, color, radius) {
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+    }
+
+    // 수식 및 UI 동기화
+    function updateMathUI(c, cSq, a2b2) {
+      // 각도 슬라이더 값 동기화
+      angleSlider.value = state.angleDeg.toFixed(1);
+      angleValueText.textContent = state.angleDeg.toFixed(1) + '°';
+
+      // c 길이 및 c² 표시
+      cLengthText.textContent = c.toFixed(2);
+      cSquaredValue.textContent = cSq.toFixed(2);
+
+      // c² 지수 표현
+      const cRound = Math.round(c);
+      if (Math.abs(c - cRound) < 0.05) {
+        cSquaredText.innerHTML = `${cRound}<sup>2</sup>`;
+      } else {
+        cSquaredText.innerHTML = `${c.toFixed(1)}<sup>2</sup>`;
+      }
+
+      // 오차 허용 판정 (부동소수점 오차 감안)
+      const diff = a2b2 - cSq;
+      const EPSILON = 0.45; // 직각 판정 오차 여유
+
+      // 초기화
+      ruleAcute.className = "p-2.5 rounded-lg border border-transparent transition-colors";
+      ruleRight.className = "p-2.5 rounded-lg border border-transparent transition-colors";
+      ruleObtuse.className = "p-2.5 rounded-lg border border-transparent transition-colors";
+
+      if (Math.abs(diff) <= EPSILON || Math.abs(state.angleDeg - 90) < 0.5) {
+        // 1. 직각삼각형 (3² + 4² = c²)
+        circleSymbolBox.textContent = "=";
+        circleSymbolBox.className = "w-10 h-10 sm:w-11 sm:h-11 rounded-full border-2 border-amber-500 bg-amber-50 text-amber-700 flex items-center justify-center text-xl sm:text-2xl font-extrabold shadow-sm scale-110";
+        evalSymbolSmall.textContent = "=";
+        evalSymbolSmall.className = "font-bold text-amber-600 text-base";
+
+        statusBadge.className = "flex items-center px-3.5 py-1.5 rounded-full text-sm font-bold shadow-sm transition-all duration-300 bg-amber-100 text-amber-800 border border-amber-300";
+        badgeIcon.textContent = "📐";
+        badgeText.textContent = "직각삼각형 (∠C = 90°)";
+
+        ruleRight.className = "p-2.5 rounded-lg border border-amber-200 bg-amber-50/80 font-semibold";
+      } else if (diff > 0) {
+        // 2. 예각삼각형 (3² + 4² > c²)
+        circleSymbolBox.textContent = ">";
+        circleSymbolBox.className = "w-10 h-10 sm:w-11 sm:h-11 rounded-full border-2 border-blue-500 bg-blue-50 text-blue-700 flex items-center justify-center text-xl sm:text-2xl font-extrabold shadow-sm";
+        evalSymbolSmall.textContent = ">";
+        evalSymbolSmall.className = "font-bold text-blue-600 text-base";
+
+        statusBadge.className = "flex items-center px-3.5 py-1.5 rounded-full text-sm font-bold shadow-sm transition-all duration-300 bg-blue-100 text-blue-800 border border-blue-300";
+        badgeIcon.textContent = "🔹";
+        badgeText.textContent = "예각삼각형 (∠C < 90°)";
+
+        ruleAcute.className = "p-2.5 rounded-lg border border-blue-200 bg-blue-50/80 font-semibold";
+      } else {
+        // 3. 둔각삼각형 (3² + 4² < c²)
+        circleSymbolBox.textContent = "<";
+        circleSymbolBox.className = "w-10 h-10 sm:w-11 sm:h-11 rounded-full border-2 border-rose-500 bg-rose-50 text-rose-700 flex items-center justify-center text-xl sm:text-2xl font-extrabold shadow-sm";
+        evalSymbolSmall.textContent = "<";
+        evalSymbolSmall.className = "font-bold text-rose-600 text-base";
+
+        statusBadge.className = "flex items-center px-3.5 py-1.5 rounded-full text-sm font-bold shadow-sm transition-all duration-300 bg-rose-100 text-rose-800 border border-rose-300";
+        badgeIcon.textContent = "🔸";
+        badgeText.textContent = "둔각삼각형 (∠C > 90°)";
+
+        ruleObtuse.className = "p-2.5 rounded-lg border border-rose-200 bg-rose-50/80 font-semibold";
+      }
+    }
+
+    // 각도로 점 A 위치 및 각도 설정
+    function setAngle(deg, snap = true) {
+      let finalDeg = Math.max(15, Math.min(165, deg));
+
+      // 90도 자석 스냅 검사
+      if (snap && state.snapEnabled && Math.abs(finalDeg - 90) < state.snapThreshold) {
+        finalDeg = 90.0;
+      }
+
+      state.angleDeg = finalDeg;
+      draw();
+    }
+
+    // 마우스 및 터치 좌표로부터 각도 계산
+    function handlePointerMove(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      const pointerX = clientX - rect.left;
+      const pointerY = clientY - rect.top;
+
+      // 점 C에서 포인터까지의 각도 구하기
+      const dx = pointerX - originC.x;
+      const dy = pointerY - originC.y;
+
+      // 각도: C의 음의 x축 방향(B방향)을 0도로 볼 때의 시계방향/반시계방향 계산
+      // 수학 좌표계(상향 y+):
+      // Math.atan2(-dy, dx) -> 양의 x축 기준 각도
+      // 점 B는 (-1, 0) 방향 = 180도.
+      let radFromC = Math.atan2(-dy, dx); // [-PI, PI]
+      if (radFromC < 0) radFromC += 2 * Math.PI;
+
+      // 점 B(각도 PI)에서 점 A까지의 사잇각 C
+      let angleDeg = (Math.PI - radFromC) * (180 / Math.PI);
+
+      // 음수 각도 및 360도 경계 정규화
+      while (angleDeg < 0) angleDeg += 360;
+      while (angleDeg > 360) angleDeg -= 360;
+
+      // 허용 범위: 15도 ~ 165도 (상단 반평면 위에서 회전)
+      if (angleDeg >= 10 && angleDeg <= 170) {
+        setAngle(angleDeg, true);
+      }
+    }
+
+    // 마우스 / 터치 이벤트 등록
+    function initInteractions() {
+      // 슬라이더 이벤트
+      angleSlider.addEventListener('input', (e) => {
+        setAngle(parseFloat(e.target.value), false);
+      });
+
+      // 체크박스
+      chkSnap90.addEventListener('change', (e) => {
+        state.snapEnabled = e.target.checked;
+      });
+      chkShowArc.addEventListener('change', (e) => {
+        state.showArc = e.target.checked;
+        draw();
+      });
+
+      // 프리셋 케이스 버튼
+      // 1. 예각: c = 4 (3, 4, 4) -> cos(C) = (3^2 + 4^2 - 4^2)/(2*3*4) = 9/24 = 0.375 -> C ≈ 67.975°
+      btnCaseAcute.addEventListener('click', () => {
+        const deg = Math.acos(9 / 24) * (180 / Math.PI);
+        setAngle(deg, false);
+      });
+
+      // 2. 직각: c = 5 (3, 4, 5) -> C = 90°
+      btnCaseRight.addEventListener('click', () => {
+        setAngle(90.0, false);
+      });
+
+      // 3. 둔각: c = 6 (3, 4, 6) -> cos(C) = (3^2 + 4^2 - 6^2)/(2*3*4) = -11/24 ≈ -0.4583 -> C ≈ 117.28°
+      btnCaseObtuse.addEventListener('click', () => {
+        const deg = Math.acos(-11 / 24) * (180 / Math.PI);
+        setAngle(deg, false);
+      });
+
+      // 캔버스 드래그 인터랙션
+      const startDrag = (clientX, clientY) => {
+        const rect = canvas.getBoundingClientRect();
+        const px = clientX - rect.left;
+        const py = clientY - rect.top;
+        const { A } = getVertices();
+
+        // 점 A 주변 45px 반경 클릭 시 드래그 시작 또는 캔버스 전체 터치 허용
+        const distToA = Math.hypot(px - A.x, py - A.y);
+        if (distToA < 50 || true) { // 모바일 편의를 위해 캔버스 영역 내 터치 이동 모두 지원
+          state.isDragging = true;
+          handlePointerMove(clientX, clientY);
+        }
+      };
+
+      const moveDrag = (clientX, clientY) => {
+        if (!state.isDragging) return;
+        handlePointerMove(clientX, clientY);
+      };
+
+      const stopDrag = () => {
+        state.isDragging = false;
+      };
+
+      // 마우스 이벤트
+      canvas.addEventListener('mousedown', (e) => startDrag(e.clientX, e.clientY));
+      window.addEventListener('mousemove', (e) => moveDrag(e.clientX, e.clientY));
+      window.addEventListener('mouseup', stopDrag);
+
+      // 터치 이벤트
+      canvas.addEventListener('touchstart', (e) => {
+        if (e.touches.length > 0) {
+          startDrag(e.touches[0].clientX, e.touches[0].clientY);
+          e.preventDefault(); // 스크롤 방지
+        }
+      }, { passive: false });
+
+      window.addEventListener('touchmove', (e) => {
+        if (!state.isDragging) return;
+        if (e.touches.length > 0) {
+          moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+          e.preventDefault();
+        }
+      }, { passive: false });
+
+      window.addEventListener('touchend', stopDrag);
+    }
+
+    // 윈도우 로드 및 리사이즈 처리
+    window.addEventListener('load', () => {
+      resizeCanvas();
+      initInteractions();
+      setAngle(90, false); // 초기 상태: 직각삼각형 (3, 4, 5)
+    });
+
+    window.addEventListener('resize', () => {
+      resizeCanvas();
+    });
+  </script>
+</body>
+</html>
