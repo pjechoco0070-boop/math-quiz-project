@@ -1,0 +1,2453 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>수업용 동전 던지기 확률 시뮬레이션 (큰수의 법칙)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Noto Sans KR & Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', 'Inter', sans-serif;
+            background-color: #f1f5f9;
+            color: #1e293b;
+        }
+
+        /* 3D 동전 애니메이션 스타일 */
+        .coin-scene {
+            perspective: 1000px;
+        }
+
+        .coin {
+            width: 112px;
+            height: 112px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .coin.flipping-heads {
+            animation: flipHeads 0.55s ease-out forwards;
+        }
+
+        .coin.flipping-tails {
+            animation: flipTails 0.55s ease-out forwards;
+        }
+
+        @keyframes flipHeads {
+            0% { transform: rotateY(0deg) scale(1); }
+            50% { transform: rotateY(900deg) scale(1.22); }
+            100% { transform: rotateY(1800deg) scale(1); }
+        }
+
+        @keyframes flipTails {
+            0% { transform: rotateY(0deg) scale(1); }
+            50% { transform: rotateY(990deg) scale(1.22); }
+            100% { transform: rotateY(1980deg) scale(1); }
+        }
+
+        .coin-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.25), 0 8px 16px rgba(0, 0, 0, 0.15);
+            border: 5px solid #d97706;
+        }
+
+        /* 앞면 (황금빛 100원/학 느낌) */
+        .coin-heads {
+            background: radial-gradient(circle at 30% 30%, #fef08a, #f59e0b);
+            color: #78350f;
+            transform: rotateY(0deg);
+        }
+
+        /* 뒷면 (은빛 숫자) */
+        .coin-tails {
+            background: radial-gradient(circle at 30% 30%, #f1f5f9, #94a3b8);
+            border-color: #64748b;
+            color: #1e293b;
+            transform: rotateY(180deg);
+        }
+
+        /* 무한 반복 활성 버튼 효과 */
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.55); }
+            50% { box-shadow: 0 0 0 8px rgba(225, 29, 72, 0); }
+        }
+        .infinite-active {
+            animation: pulseGlow 1.5s infinite;
+        }
+
+        /* 교과서 표 채워짐 효과 */
+        .milestone-filled {
+            background-color: #ecfdf5;
+            color: #065f46;
+            font-weight: 800;
+            transition: all 0.3s ease;
+        }
+
+        /* 교사용 빈칸 가리기(블라인드) 스타일 */
+        .cell-masked {
+            background-color: #fef3c7 !important;
+            color: transparent !important;
+            position: relative;
+            cursor: pointer;
+            user-select: none;
+        }
+        .cell-masked::after {
+            content: "? (클릭)";
+            color: #b45309;
+            font-size: 0.75rem;
+            font-weight: 700;
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- 상단 수업 내비게이션 & 화면 분할 모드 전환 바 -->
+    <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-40 border-b border-slate-700">
+        <div class="max-w-[1600px] mx-auto px-4 py-3 sm:px-6 flex flex-col lg:flex-row items-center justify-between gap-3">
+            
+            <!-- 좌측: 수업 타이틀 -->
+            <div class="flex items-center gap-3 self-start lg:self-auto">
+                <div class="bg-emerald-500 text-slate-950 w-10 h-10 rounded-xl flex items-center justify-center font-black text-xl shadow">
+                    <i class="fa-solid fa-coins"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-white">동전 던지기 실험: 통계적 확률과 수학적 확률</h1>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 중앙: 화면 모드 전환 컨트롤 (나란히 보기 / 화면 1 / 화면 2 / 화면 3 실제 실험 집계) -->
+            <div class="flex flex-wrap items-center bg-slate-800 p-1 rounded-xl border border-slate-700 w-full lg:w-auto justify-center gap-1">
+                <button id="viewModeSplit" onclick="setViewMode('split')" class="flex-1 sm:flex-initial px-3 py-2 rounded-lg text-xs sm:text-sm font-bold bg-emerald-600 text-white shadow transition flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-table-columns"></i>
+                    <span>나란히 보기 (2분할)</span>
+                </button>
+                <button id="viewModeScreen1" onclick="setViewMode('screen1')" class="flex-1 sm:flex-initial px-3 py-2 rounded-lg text-xs sm:text-sm font-bold text-slate-300 hover:text-white transition flex items-center justify-center gap-1.5">
+                    <span class="w-4 h-4 rounded-full bg-slate-600 text-[10px] inline-flex items-center justify-center text-white">1</span>
+                    <span>동전 던지기 실험</span>
+                </button>
+                <button id="viewModeScreen2" onclick="setViewMode('screen2')" class="flex-1 sm:flex-initial px-3 py-2 rounded-lg text-xs sm:text-sm font-bold text-slate-300 hover:text-white transition flex items-center justify-center gap-1.5">
+                    <span class="w-4 h-4 rounded-full bg-slate-600 text-[10px] inline-flex items-center justify-center text-white">2</span>
+                    <span>상대도수 수렴값 찾기</span>
+                </button>
+                <button id="viewModeScreen3" onclick="setViewMode('screen3')" class="flex-1 sm:flex-initial px-3 py-2 rounded-lg text-xs sm:text-sm font-bold text-indigo-200 hover:text-white border border-indigo-500/40 bg-indigo-950/50 transition flex items-center justify-center gap-1.5">
+                    <span class="w-4 h-4 rounded-full bg-indigo-500 text-[10px] inline-flex items-center justify-center text-white font-black">3</span>
+                    <span>우리 반 실제 실험 집계</span>
+                </button>
+            </div>
+
+            <!-- 우측: 교사용 효과음 토글, 수업 가이드 & 전체 초기화 -->
+            <div class="flex items-center gap-2 self-end lg:self-auto">
+                <button id="btnSoundToggle" onclick="toggleSound()" class="bg-emerald-900/60 hover:bg-emerald-800/80 text-emerald-200 text-xs sm:text-sm font-bold px-3 py-2 rounded-xl border border-emerald-500/40 transition flex items-center gap-1.5" title="효과음 켜기/끄기">
+                    <i id="soundIcon" class="fa-solid fa-volume-high text-emerald-400"></i>
+                    <span id="soundText">효과음 켜짐</span>
+                </button>
+                <button onclick="openTeacherModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs sm:text-sm font-semibold px-3.5 py-2 rounded-xl border border-slate-600 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-chalkboard-user text-amber-400"></i>
+                    <span>수업 가이드</span>
+                </button>
+                <button onclick="resetExperiment()" class="bg-rose-600/90 hover:bg-rose-600 text-white text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl shadow transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>초기화</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 메인 2분할 워크스페이스 컨테이너 -->
+    <main id="workspaceGrid" class="flex-grow max-w-[1600px] w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+
+        <!-- ===================================================================== -->
+        <!-- [화면 1] 동전 던지기 시뮬레이션 (교과서 활동 1) -->
+        <!-- ===================================================================== -->
+        <section id="screen1Panel" class="bg-white rounded-3xl shadow-md border-2 border-slate-200/90 flex flex-col overflow-hidden">
+            <!-- 화면 1 헤더 -->
+            <div class="bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-3.5 text-white flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <span class="bg-white text-amber-700 font-black text-xs px-2.5 py-1 rounded-lg shadow-sm">화면 1</span>
+                    <h2 class="text-base sm:text-lg font-extrabold tracking-tight">동전 던지기 시뮬레이션 (실험실)</h2>
+                </div>
+                <button onclick="setViewMode(currentViewMode === 'screen1' ? 'split' : 'screen1')" class="text-xs bg-black/20 hover:bg-black/30 px-2.5 py-1 rounded-lg font-semibold transition" title="화면 1 확대/축소">
+                    <i id="iconExpand1" class="fa-solid fa-expand"></i>
+                </button>
+            </div>
+
+            <div class="p-5 sm:p-6 flex-grow flex flex-col justify-between space-y-5">
+                
+                <!-- 상단: 3D 동전 애니메이션 + 컨트롤 버튼 영역 -->
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center bg-slate-50 rounded-2xl p-4 border border-slate-200">
+                    <!-- 3D 동전 디스플레이 (5 cols) -->
+                    <div class="sm:col-span-5 flex flex-col items-center justify-center py-2">
+                        <div class="coin-scene mb-3">
+                            <div id="coinElement" class="coin">
+                                <!-- 앞면 -->
+                                <div class="coin-face coin-heads">
+                                    <span class="text-[10px] font-extrabold tracking-widest opacity-80">HEADS</span>
+                                    <span class="text-3xl font-black leading-none my-1">앞</span>
+                                    <span class="text-[11px] font-bold bg-amber-700/15 px-2 py-0.5 rounded-full">100원</span>
+                                </div>
+                                <!-- 뒷면 -->
+                                <div class="coin-face coin-tails">
+                                    <span class="text-[10px] font-extrabold tracking-widest opacity-70">TAILS</span>
+                                    <span class="text-3xl font-black leading-none my-1">뒤</span>
+                                    <span class="text-[11px] font-bold bg-slate-600/15 px-2 py-0.5 rounded-full">숫자</span>
+                                </div>
+                            </div>
+                        </div>
+                        <span id="lastResultBadge" class="text-xs font-extrabold px-3 py-1 rounded-full bg-slate-200 text-slate-700">
+                            버튼을 눌러 실험 시작
+                        </span>
+                    </div>
+
+                    <!-- 시행 버튼 그룹 (7 cols) -->
+                    <div class="sm:col-span-7 space-y-2.5">
+                        <div class="grid grid-cols-3 gap-2">
+                            <button onclick="tossCoins(1, true)" class="py-3 px-2 bg-slate-800 hover:bg-slate-700 active:scale-95 text-white font-bold rounded-xl shadow-sm transition flex flex-col items-center">
+                                <span class="text-sm">1회 던지기</span>
+                                <span class="text-[11px] text-slate-300 font-normal">동전 회전</span>
+                            </button>
+                            <button onclick="tossCoins(25, false)" class="py-3 px-2 bg-amber-600 hover:bg-amber-500 active:scale-95 text-white font-bold rounded-xl shadow-sm transition flex flex-col items-center ring-2 ring-amber-300">
+                                <span class="text-sm">25회 던지기</span>
+                                <span class="text-[11px] text-amber-100 font-normal">학생 1명 분량</span>
+                            </button>
+                            <button onclick="tossCoins(100, false)" class="py-3 px-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold rounded-xl shadow-sm transition flex flex-col items-center">
+                                <span class="text-sm">100회 던지기</span>
+                                <span class="text-[11px] text-emerald-100 font-normal">학급 합산</span>
+                            </button>
+                        </div>
+
+                        <!-- 100회씩 무한 반복 버튼 -->
+                        <button id="btnInfinite" onclick="toggleInfiniteLoop()" class="w-full py-3.5 px-4 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white font-extrabold rounded-xl shadow-md transition flex items-center justify-center gap-2 text-sm sm:text-base">
+                            <i id="infiniteIcon" class="fa-solid fa-infinity"></i>
+                            <span id="infiniteText">100회씩 무한 반복 시작</span>
+                        </button>
+
+                        <!-- 반복 속도 조절 슬라이더 -->
+                        <div class="bg-white px-3 py-2 rounded-xl border border-slate-200 flex items-center justify-between gap-2 text-xs">
+                            <span class="font-bold text-slate-600 whitespace-nowrap"><i class="fa-solid fa-gauge-high text-rose-500 mr-1"></i>반복 속도</span>
+                            <input id="speedRange" type="range" min="1" max="5" value="3" class="w-full accent-rose-600 cursor-pointer">
+                            <span id="speedLabel" class="font-bold text-slate-700 w-16 text-right">보통 (3x)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 중단: 실시간 시행 카운터 & 최근 25회 시각적 미니 그리드 -->
+                <div class="space-y-3">
+                    <div class="grid grid-cols-3 gap-3 text-center">
+                        <div class="bg-slate-100 rounded-xl p-3 border border-slate-200">
+                            <span class="text-xs font-bold text-slate-500 block">총 던진 횟수</span>
+                            <span id="statTotal" class="text-2xl sm:text-3xl font-black text-slate-800">0</span>
+                            <span class="text-xs font-bold text-slate-500">회</span>
+                        </div>
+                        <div class="bg-amber-50 rounded-xl p-3 border border-amber-200">
+                            <span class="text-xs font-bold text-amber-700 block">앞면 나온 횟수</span>
+                            <span id="statHeads" class="text-2xl sm:text-3xl font-black text-amber-600">0</span>
+                            <span class="text-xs font-bold text-amber-700">회</span>
+                        </div>
+                        <div class="bg-slate-100 rounded-xl p-3 border border-slate-200">
+                            <span class="text-xs font-bold text-slate-500 block">뒷면 나온 횟수</span>
+                            <span id="statTails" class="text-2xl sm:text-3xl font-black text-slate-600">0</span>
+                            <span class="text-xs font-bold text-slate-500">회</span>
+                        </div>
+                    </div>
+
+                    <!-- 최근 25회 동전 결과 요약 미니 그리드 -->
+                    <div class="bg-slate-50 rounded-xl p-3 border border-slate-200">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                                <i class="fa-solid fa-table-cells text-amber-600"></i>
+                                최근 시행 결과 기록 (최대 25개 표시)
+                            </span>
+                            <span id="recentSummaryText" class="text-[11px] font-semibold text-slate-500">기록 없음</span>
+                        </div>
+                        <div id="recentCoinsGrid" class="flex flex-wrap gap-1.5 min-h-[28px] items-center">
+                            <span class="text-xs text-slate-400">동전을 던지면 앞(황색)·뒤(회색) 결과가 여기에 나열됩니다.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 하단: 교과서 활동 1 표 (자동 기록 + 교사용 빈칸 가리기/공개 토글) -->
+                <div class="bg-emerald-50/60 rounded-2xl p-4 border border-emerald-200">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                        <h3 class="text-sm sm:text-base font-extrabold text-emerald-950 flex items-center gap-2">
+                            <span class="bg-emerald-700 text-white w-5 h-5 rounded-full inline-flex items-center justify-center text-xs">1</span>
+                            학급 실험 결과 모으기 표 (교과서 활동 1)
+                        </h3>
+                        <!-- 교사용 발표 유도 기능: 상대도수 칸 가리기 토글 -->
+                        <button id="btnToggleMask" onclick="toggleMaskMode()" class="text-xs font-bold px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 transition flex items-center gap-1">
+                            <i id="maskIcon" class="fa-solid fa-eye-slash"></i>
+                            <span id="maskBtnText">상대도수 칸 가리기 (발표용)</span>
+                        </button>
+                    </div>
+                    <p class="text-xs text-slate-600 mb-2.5">
+                        각자 25회씩 던진 결과를 모아 던진 횟수가 <strong>25, 100, 200, 600, 1000회</strong>에 도달할 때마다 자동 기록됩니다. (소수점 아래 셋째 자리까지 반올림)
+                    </p>
+
+                    <div class="overflow-x-auto rounded-xl border border-emerald-600/30 bg-white">
+                        <table class="w-full text-center border-collapse text-xs sm:text-sm">
+                            <thead>
+                                <tr class="bg-emerald-100 text-emerald-950 font-extrabold border-b border-emerald-600/30">
+                                    <th class="py-2 px-2 border-r border-emerald-600/20 bg-emerald-200/80 text-left sm:text-center whitespace-nowrap">던진 횟수(회)</th>
+                                    <th class="py-2 px-1.5 border-r border-emerald-600/20">25</th>
+                                    <th class="py-2 px-1.5 border-r border-emerald-600/20">100</th>
+                                    <th class="py-2 px-1.5 border-r border-emerald-600/20">200</th>
+                                    <th class="py-2 px-1.5 border-r border-emerald-600/20">600</th>
+                                    <th class="py-2 px-1.5 border-r border-emerald-600/20">1000</th>
+                                    <th class="py-2 px-1.5">5000</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b border-slate-200">
+                                    <td class="py-2.5 px-2 font-bold text-emerald-950 bg-emerald-50 border-r border-emerald-600/20 text-left sm:text-center whitespace-nowrap">앞면이 나온 횟수(회)</td>
+                                    <td id="cell-heads-25" class="py-2.5 px-1.5 border-r border-slate-200 text-slate-400">-</td>
+                                    <td id="cell-heads-100" class="py-2.5 px-1.5 border-r border-slate-200 text-slate-400">-</td>
+                                    <td id="cell-heads-200" class="py-2.5 px-1.5 border-r border-slate-200 text-slate-400">-</td>
+                                    <td id="cell-heads-600" class="py-2.5 px-1.5 border-r border-slate-200 text-slate-400">-</td>
+                                    <td id="cell-heads-1000" class="py-2.5 px-1.5 border-r border-slate-200 text-slate-400">-</td>
+                                    <td id="cell-heads-5000" class="py-2.5 px-1.5 text-slate-400">-</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2.5 px-2 font-bold text-emerald-950 bg-emerald-50 border-r border-emerald-600/20 text-left sm:text-center whitespace-nowrap">상대도수</td>
+                                    <td id="cell-rel-25" onclick="revealSingleCell(this)" class="py-2.5 px-1.5 border-r border-slate-200 text-slate-400">-</td>
+                                    <td id="cell-rel-100" onclick="revealSingleCell(this)" class="py-2.5 px-1.5 border-r border-slate-200 text-slate-400">-</td>
+                                    <td id="cell-rel-200" onclick="revealSingleCell(this)" class="py-2.5 px-1.5 border-r border-slate-200 text-slate-400">-</td>
+                                    <td id="cell-rel-600" onclick="revealSingleCell(this)" class="py-2.5 px-1.5 border-r border-slate-200 text-slate-400">-</td>
+                                    <td id="cell-rel-1000" onclick="revealSingleCell(this)" class="py-2.5 px-1.5 border-r border-slate-200 text-slate-400">-</td>
+                                    <td id="cell-rel-5000" onclick="revealSingleCell(this)" class="py-2.5 px-1.5 text-slate-400">-</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================================================================== -->
+        <!-- [화면 2] 상대도수 수렴값 찾기 (교과서 활동 2 & 수학적 확률 탐구) -->
+        <!-- ===================================================================== -->
+        <section id="screen2Panel" class="bg-white rounded-3xl shadow-md border-2 border-slate-200/90 flex flex-col overflow-hidden">
+            <!-- 화면 2 헤더 -->
+            <div class="bg-gradient-to-r from-emerald-700 to-teal-700 px-5 py-3.5 text-white flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <span class="bg-white text-emerald-800 font-black text-xs px-2.5 py-1 rounded-lg shadow-sm">화면 2</span>
+                    <h2 class="text-base sm:text-lg font-extrabold tracking-tight">상대도수 수렴값 찾기 (그래프 분석)</h2>
+                </div>
+                <button onclick="setViewMode(currentViewMode === 'screen2' ? 'split' : 'screen2')" class="text-xs bg-black/20 hover:bg-black/30 px-2.5 py-1 rounded-lg font-semibold transition" title="화면 2 확대/축소">
+                    <i id="iconExpand2" class="fa-solid fa-expand"></i>
+                </button>
+            </div>
+
+            <div class="p-5 sm:p-6 flex-grow flex flex-col justify-between space-y-4">
+
+                <!-- 상단: 교과서 활동 2 학생 추측 입력 및 피드백 영역 -->
+                <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                            <h3 class="text-sm sm:text-base font-extrabold text-slate-800 flex items-center gap-2">
+                                <span class="bg-emerald-700 text-white w-5 h-5 rounded-full inline-flex items-center justify-center text-xs">2</span>
+                                탐구 질문: 상대도수는 어떤 값에 가까워질까?
+                            </h3>
+                            <p class="text-xs text-slate-500 mt-0.5">던진 횟수가 한없이 많아질 때 수렴할 것으로 예상되는 값을 적어보세요.</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input id="guessInput" type="number" step="0.01" min="0" max="1" placeholder="예: 0.5" class="w-28 px-3 py-2 text-sm font-bold text-center border-2 border-slate-300 rounded-xl focus:outline-none focus:border-emerald-600 bg-white">
+                            <button onclick="checkStudentGuess()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm transition whitespace-nowrap">
+                                추측 확인
+                            </button>
+                        </div>
+                    </div>
+                    <!-- 추측 확인 결과 피드백 박스 -->
+                    <div id="guessFeedback" class="hidden mt-2.5 text-xs sm:text-sm font-semibold px-3 py-2 rounded-xl"></div>
+                </div>
+
+                <!-- 중단: 그래프 컨트롤 툴바 + 고해상도 Canvas 그래프 -->
+                <div class="flex-grow flex flex-col">
+                    <!-- 그래프 옵션 버튼 바 -->
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+                        <!-- Y축 스케일 전환 (교과서 0.35~0.65 물결선 vs 전체 0~1) -->
+                        <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+                            <button id="btnScaleTextbook" onclick="setChartScale('textbook')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-white text-emerald-700 shadow-sm transition">
+                                교과서 축 (0.35~0.65)
+                            </button>
+                            <button id="btnScaleFull" onclick="setChartScale('full')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition">
+                                전체 축 (0~1)
+                            </button>
+                        </div>
+
+                        <!-- 수학적 확률(0.5) 기준선 표시/숨기기 토글 (수업 중 극적 공개용) -->
+                        <button id="btnToggleRefLine" onclick="toggleMathProbLine()" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition flex items-center gap-1.5">
+                            <i id="refLineIcon" class="fa-solid fa-eye"></i>
+                            <span id="refLineText">수학적 확률(0.5) 선 숨기기</span>
+                        </button>
+                    </div>
+
+                    <!-- 그래프 캔버스 컨테이너 -->
+                    <div id="chartContainer" class="w-full flex-grow min-h-[260px] sm:min-h-[310px] relative bg-white rounded-2xl border-2 border-slate-200 p-2">
+                        <canvas id="convergenceChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- 하단: 통계적 확률 -> 수학적 확률 변환 및 수렴 오차 분석 패널 -->
+                <div class="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl p-4 border border-emerald-200 space-y-3">
+                    <div class="grid grid-cols-3 gap-2 text-center items-center">
+                        <div class="bg-white/90 rounded-xl p-2.5 border border-emerald-200/80">
+                            <span class="text-[11px] font-bold text-emerald-800 block">현재 통계적 확률 (상대도수)</span>
+                            <span id="panelRelFreq" class="text-xl sm:text-2xl font-black text-emerald-700">0.000</span>
+                            <span id="panelFraction" class="text-[11px] text-slate-500 block font-medium">(0 / 0)</span>
+                        </div>
+
+                        <div class="flex flex-col items-center justify-center">
+                            <span class="text-[11px] font-bold text-slate-500 mb-1">시행 횟수 $n \to \infty$</span>
+                            <div class="bg-emerald-600 text-white px-3 py-1 rounded-full text-xs font-extrabold shadow-sm flex items-center gap-1">
+                                <span>수렴</span>
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </div>
+                            <span id="panelDiffText" class="text-[11px] font-bold text-rose-600 mt-1">오차: -</span>
+                        </div>
+
+                        <div class="bg-white/90 rounded-xl p-2.5 border border-rose-200/80">
+                            <span class="text-[11px] font-bold text-rose-800 block">수학적 확률 (이론값)</span>
+                            <span class="text-xl sm:text-2xl font-black text-rose-600">0.500</span>
+                            <span class="text-[11px] text-slate-500 block font-medium">(1 / 2)</span>
+                        </div>
+                    </div>
+
+                    <!-- 수렴도 게이지 바 -->
+                    <div>
+                        <div class="flex justify-between text-[11px] font-bold text-slate-600 mb-1">
+                            <span>수학적 확률(0.5)과의 근접도</span>
+                            <span id="convergencePercent">대기 중</span>
+                        </div>
+                        <div class="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
+                            <div id="convergenceBar" class="h-full bg-gradient-to-r from-amber-500 via-teal-500 to-emerald-600 transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ===================================================================== -->
+        <!-- [화면 3] 우리 반 실제 실험 집계 (모둠별 합산 결과만 간편 입력) -->
+        <!-- ===================================================================== -->
+        <section id="screen3Panel" class="hidden bg-white rounded-3xl shadow-md border-2 border-indigo-200/90 flex flex-col overflow-hidden">
+            <!-- 화면 3 헤더 -->
+            <div class="bg-gradient-to-r from-indigo-700 via-blue-700 to-indigo-800 px-5 py-3.5 text-white flex flex-wrap items-center justify-between gap-3">
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <span class="bg-white text-indigo-800 font-black text-xs px-2.5 py-1 rounded-lg shadow-sm">화면 3 · 모둠별 합산 취합</span>
+                    <div class="flex items-center gap-2 bg-indigo-950/50 border border-indigo-400/40 rounded-xl px-2.5 py-1">
+                        <select id="classSelectPreset" onchange="syncClassNameFromSelect()" class="bg-transparent text-white font-extrabold text-sm focus:outline-none cursor-pointer">
+                            <option value="2학년 1반" class="text-slate-900">2학년 1반</option>
+                            <option value="2학년 2반" class="text-slate-900">2학년 2반</option>
+                            <option value="2학년 3반" class="text-slate-900">2학년 3반</option>
+                            <option value="2학년 4반" class="text-slate-900">2학년 4반</option>
+                            <option value="2학년 5반" class="text-slate-900">2학년 5반</option>
+                            <option value="2학년 6반" class="text-slate-900">2학년 6반</option>
+                            <option value="2학년 7반" class="text-slate-900">2학년 7반</option>
+                            <option value="2학년 8반" class="text-slate-900">2학년 8반</option>
+                            <option value="2학년 9반" class="text-slate-900">2학년 9반</option>
+                            <option value="2학년 10반" class="text-slate-900">2학년 10반</option>
+                            <option value="custom" class="text-slate-900">직접 입력...</option>
+                        </select>
+                        <input id="classNameCustomInput" type="text" value="2학년 1반" oninput="updateClassTitleDisplay()" class="hidden w-28 bg-white text-slate-900 font-extrabold text-xs px-2 py-1 rounded-lg focus:outline-none" placeholder="학급명 입력">
+                    </div>
+                    <h2 id="screen3HeaderTitle" class="text-base sm:text-lg font-extrabold tracking-tight">2학년 1반 실제 동전 던지기 모둠별 실험 집계</h2>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="sendClassDataToScreen2()" class="text-xs sm:text-sm bg-emerald-400 hover:bg-emerald-300 text-slate-950 px-3.5 py-1.5 rounded-xl font-extrabold shadow transition flex items-center gap-1.5" title="우리 반 모둠 누적 데이터를 화면 2의 수렴 분석 그래프로 보냅니다">
+                        <i class="fa-solid fa-share-from-square"></i>
+                        <span>화면 2 수렴 그래프로 보내기</span>
+                    </button>
+                    <button onclick="setViewMode('split')" class="text-xs bg-black/25 hover:bg-black/40 px-2.5 py-1.5 rounded-xl font-semibold transition" title="나란히 보기로 돌아가기">
+                        <i class="fa-solid fa-compress"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-5 sm:p-6 space-y-5">
+
+                <!-- 1. 상단 교사용 일괄 컨트롤 & 빠른 도구 모음 -->
+                <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3">
+                    <!-- 좌측: 모둠 수 조절 & 전체 모둠 던진 횟수 일괄 설정 -->
+                    <div class="flex flex-wrap items-center gap-3">
+                        <!-- 모둠 수 조절 (4~10모둠, 기본 7모둠) -->
+                        <div class="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-slate-300 shadow-2xs">
+                            <span class="text-xs font-extrabold text-slate-700 mr-1"><i class="fa-solid fa-people-group text-indigo-600 mr-1"></i>모둠 수: <strong id="groupCountDisplay" class="text-indigo-700 text-sm">7</strong>모둠</span>
+                            <button type="button" onclick="changeGroupCount(-1)" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-rose-100 text-slate-700 hover:text-rose-700 text-xs font-extrabold transition">
+                                - 모둠 삭제
+                            </button>
+                            <button type="button" onclick="changeGroupCount(1)" class="px-2.5 py-1 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-800 text-xs font-extrabold transition">
+                                + 모둠 추가
+                            </button>
+                        </div>
+
+                        <!-- 전체 모둠 던진 횟수 일괄 설정 -->
+                        <div class="flex flex-wrap items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-slate-300 shadow-2xs">
+                            <span class="text-xs font-extrabold text-slate-700 mr-1">전체 모둠 던진 횟수 일괄 설정:</span>
+                            <button type="button" onclick="applyBulkTosses(75)" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-800 text-xs font-extrabold transition">75회</button>
+                            <button type="button" onclick="applyBulkTosses(100)" class="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-800 border border-indigo-200 text-xs font-extrabold transition">100회</button>
+                            <button type="button" onclick="applyBulkTosses(125)" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-800 text-xs font-extrabold transition">125회</button>
+                            <button type="button" onclick="applyBulkTosses(150)" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-800 text-xs font-extrabold transition">150회</button>
+                        </div>
+                    </div>
+
+                    <!-- 우측: 예시 데이터 채우기 / 입력 초기화 / 발표용 가리기 -->
+                    <div class="flex flex-wrap items-center gap-2 justify-end">
+                        <button type="button" id="btnToggleClassMask" onclick="toggleClassTableMask()" class="px-3 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 text-xs font-extrabold transition flex items-center gap-1.5">
+                            <i id="classMaskIcon" class="fa-solid fa-eye-slash"></i>
+                            <span id="classMaskBtnText">누적 상대도수 가리기</span>
+                        </button>
+                        <button type="button" onclick="fillSampleGroupData()" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold shadow-xs transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            <span>예시 데이터 채우기</span>
+                        </button>
+                        <button type="button" onclick="resetGroupData()" class="px-3.5 py-2 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-200 text-xs font-extrabold transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-eraser"></i>
+                            <span>입력 초기화</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2. 메인 2열 레이아웃: 좌측 칠판형 모둠별 합산 입력표 (7 cols) / 우측 실시간 이중 수렴 그래프 & 요약 (5 cols) -->
+                <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+
+                    <!-- 좌측 7 cols: 모둠별 합산 입력 및 자동 누적 계산 테이블 -->
+                    <div class="xl:col-span-7 bg-white rounded-2xl border-2 border-slate-300 shadow-sm overflow-hidden">
+                        <div class="bg-slate-800 text-white px-4 py-2.5 flex items-center justify-between">
+                            <span class="text-xs sm:text-sm font-extrabold flex items-center gap-2">
+                                <i class="fa-solid fa-table text-amber-400"></i>
+                                모둠별 실험 결과 합산표 <span class="text-slate-300 font-normal text-xs">(앞면 횟수 입력 후 <kbd class="bg-slate-700 px-1.5 py-0.5 rounded text-[11px]">Enter</kbd>를 누르면 다음 모둠으로 자동 이동)</span>
+                            </span>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-center border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-100 text-slate-800 text-xs sm:text-sm font-extrabold border-b-2 border-slate-300">
+                                        <th class="py-3 px-2.5 border-r border-slate-200 whitespace-nowrap">모둠</th>
+                                        <th class="py-3 px-2.5 border-r border-slate-200 bg-indigo-50/70 text-indigo-950 whitespace-nowrap">모둠 던진 횟수(회)</th>
+                                        <th class="py-3 px-2.5 border-r border-slate-200 bg-amber-50/80 text-amber-950 whitespace-nowrap">앞면 나온 횟수(회)</th>
+                                        <th class="py-3 px-2.5 border-r border-slate-200 whitespace-nowrap">모둠별 상대도수</th>
+                                        <th class="py-3 px-2.5 border-r border-slate-200 bg-emerald-50/50 text-emerald-950 whitespace-nowrap">모둠 누적 던진 횟수</th>
+                                        <th class="py-3 px-2.5 border-r border-slate-200 bg-emerald-50/50 text-emerald-950 whitespace-nowrap">모둠 누적 앞면 횟수</th>
+                                        <th class="py-3 px-2.5 bg-emerald-100/80 text-emerald-950 whitespace-nowrap">우리 반 누적 상대도수</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="groupTableBody" class="divide-y divide-slate-200 text-sm sm:text-base">
+                                    <!-- JS에서 1모둠 ~ N모둠 행 동적 렌더링 -->
+                                </tbody>
+                                <tfoot>
+                                    <tr class="bg-slate-900 text-white font-extrabold text-sm sm:text-base border-t-2 border-slate-700">
+                                        <td class="py-3.5 px-2.5 border-r border-slate-700 whitespace-nowrap text-amber-300">우리 반 전체 합계</td>
+                                        <td id="groupFooterTotalTosses" class="py-3.5 px-2.5 border-r border-slate-700 text-indigo-200">0회</td>
+                                        <td id="groupFooterTotalHeads" class="py-3.5 px-2.5 border-r border-slate-700 text-amber-300">0회</td>
+                                        <td class="py-3.5 px-2.5 border-r border-slate-700 text-slate-400 text-xs">전체 기준</td>
+                                        <td id="groupFooterCumTosses" class="py-3.5 px-2.5 border-r border-slate-700 text-emerald-200">0회</td>
+                                        <td id="groupFooterCumHeads" class="py-3.5 px-2.5 border-r border-slate-700 text-emerald-200">0회</td>
+                                        <td id="groupFooterFinalRelFreq" class="py-3.5 px-2.5 bg-emerald-600 text-white text-base sm:text-lg font-black">0.000</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 우측 5 cols: 실시간 이중 수렴 그래프 & 학급 수렴 요약 카드 -->
+                    <div class="xl:col-span-5 space-y-4">
+                        <!-- 우리 반 최종 수렴 현황 요약 배너 -->
+                        <div class="grid grid-cols-3 gap-2.5 text-center">
+                            <div class="bg-indigo-50 rounded-2xl p-3 border border-indigo-200">
+                                <span class="text-[11px] font-bold text-indigo-800 block">입력 완료 모둠</span>
+                                <span id="summaryEnteredGroups" class="text-xl sm:text-2xl font-black text-indigo-950">0 / 7</span>
+                                <span class="text-[11px] font-semibold text-indigo-700 block">모둠</span>
+                            </div>
+                            <div class="bg-emerald-50 rounded-2xl p-3 border-2 border-emerald-400">
+                                <span class="text-[11px] font-extrabold text-emerald-900 block">우리 반 최종 상대도수</span>
+                                <span id="summaryFinalRelFreq" class="text-xl sm:text-2xl font-black text-emerald-700">0.000</span>
+                                <span id="summaryTotalRatio" class="text-[11px] font-semibold text-emerald-800 block">(0 / 0)</span>
+                            </div>
+                            <div class="bg-rose-50 rounded-2xl p-3 border border-rose-200">
+                                <span class="text-[11px] font-bold text-rose-800 block">수학적 확률(0.5) 오차</span>
+                                <span id="summaryMathDiff" class="text-xl sm:text-2xl font-black text-rose-600">-</span>
+                                <span class="text-[11px] font-semibold text-rose-700 block">이론값: 0.500</span>
+                            </div>
+                        </div>
+
+                        <!-- 이중 시리즈 수렴 그래프 (모둠별 개별 점/막대 + 학급 누적 상대도수 꺾은선) -->
+                        <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 space-y-2.5">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <div>
+                                    <h3 class="text-sm sm:text-base font-extrabold text-slate-800 flex items-center gap-1.5">
+                                        <i class="fa-solid fa-chart-line text-indigo-600"></i>
+                                        모둠별 및 우리 반 누적 수렴 그래프
+                                    </h3>
+                                    <div class="flex flex-wrap items-center gap-3 text-[11px] font-bold text-slate-600 mt-1">
+                                        <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span>모둠별 개별 상대도수</span>
+                                        <span class="inline-flex items-center gap-1"><span class="w-3 h-0.5 bg-emerald-600 inline-block"></span>우리 반 누적 상대도수</span>
+                                        <span class="inline-flex items-center gap-1"><span class="w-3 h-0.5 border-t-2 border-dashed border-rose-600 inline-block"></span>수학적 확률(0.50)</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center bg-white p-1 rounded-xl border border-slate-200">
+                                    <button type="button" id="btnClassScaleTextbook" onclick="setClassChartScale('textbook')" class="px-2 py-1 rounded-lg text-[11px] font-bold bg-indigo-600 text-white shadow-2xs transition">
+                                        교과서 축 (0.35~0.65)
+                                    </button>
+                                    <button type="button" id="btnClassScaleFull" onclick="setClassChartScale('full')" class="px-2 py-1 rounded-lg text-[11px] font-bold text-slate-600 hover:text-slate-900 transition">
+                                        전체 축 (0~1)
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div id="classChartContainer" class="w-full h-[310px] sm:h-[340px] relative bg-white rounded-xl border-2 border-slate-200 p-2">
+                                <canvas id="classConvergenceChart"></canvas>
+                            </div>
+
+                            <p class="text-xs text-slate-600 bg-white px-3 py-2 rounded-xl border border-slate-200 leading-relaxed">
+                                <i class="fa-solid fa-lightbulb text-amber-500 mr-1"></i>
+                                <strong>관찰 포인트:</strong> 개별 모둠(주황색 점)은 0.5 위아래로 흩어져 있지만, 모둠 결과를 차례로 합산한 <strong>우리 반 누적 상대도수(초록색 선)</strong>는 점차 <strong>0.50</strong>에 가까워집니다.
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 교사용 수업 활용 가이드 모달 -->
+    <div id="teacherModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="text-lg font-extrabold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-chalkboard-user text-emerald-600"></i>
+                    선생님을 위한 단계별 수업 활용 가이드
+                </h3>
+                <button onclick="closeTeacherModal()" class="text-slate-400 hover:text-slate-600 text-xl">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="space-y-3 text-sm text-slate-600 leading-relaxed">
+                <div class="bg-amber-50 p-3.5 rounded-xl border border-amber-200 text-amber-950">
+                    <p class="font-extrabold mb-1">1단계: 학급 실험 모으기 (화면 1 중심)</p>
+                    <p>상단에서 <strong>[1. 동전 던지기 실험]</strong>을 크게 띄우거나 2분할 화면에서 <strong>[25회 던지기]</strong> 버튼을 학생 수만큼 눌러 100회, 200회, 600회 데이터를 채웁니다. <strong>[상대도수 칸 가리기]</strong>를 켜두면 학생들이 직접 분수를 소수로 계산해 발표하도록 유도할 수 있습니다.</p>
+                </div>
+                <div class="bg-emerald-50 p-3.5 rounded-xl border border-emerald-200 text-emerald-950">
+                    <p class="font-extrabold mb-1">2단계: 수렴값 추측 및 무한 반복 확인 (화면 2 중심)</p>
+                    <p>학생들에게 상대도수가 어떤 값에 가까워질지 추측하여 입력하게 한 뒤, <strong>[100회씩 무한 반복 시작]</strong>을 눌러 시행 횟수를 수천~수만 회로 늘려보세요. 불규칙하던 그래프가 점차 <strong>0.5</strong>에 수렴하는 <strong>큰수의 법칙</strong>을 직관적으로 확인할 수 있습니다.</p>
+                </div>
+                <div class="bg-indigo-50 p-3.5 rounded-xl border border-indigo-200 text-indigo-950">
+                    <p class="font-extrabold mb-1">3단계: 우리 반 실제 동전 실험 집계 (화면 3)</p>
+                    <p>실제 동전 실험 후 상단 <strong>[3. 우리 반 실제 실험 집계]</strong>에서 모둠별 합산 결과(던진 횟수, 앞면 나온 횟수)만 빠르게 입력해 보세요. 개별 모둠은 들쑥날쑥하지만 모둠이 누적될수록 우리 반 전체 상대도수가 <strong>0.5</strong>로 수렴하는 과정을 한눈에 보여줄 수 있습니다.</p>
+                </div>
+            </div>
+            <div class="pt-2 flex justify-end">
+                <button onclick="closeTeacherModal()" class="bg-slate-800 hover:bg-slate-700 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition">
+                    확인 및 수업 시작
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript 시뮬레이션 및 그래프 엔진 -->
+    <script>
+        // ==========================================
+        // 0. Web Audio API 동전 효과음 엔진 (외부 파일 불필요)
+        // ==========================================
+        let audioCtx = null;
+        let isSoundEnabled = true;
+        let lastBatchSoundTime = 0;
+
+        function ensureAudioContext() {
+            if (!isSoundEnabled) return null;
+            if (!audioCtx) {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioContextClass) {
+                    audioCtx = new AudioContextClass();
+                }
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function toggleSound() {
+            isSoundEnabled = !isSoundEnabled;
+            const btn = document.getElementById('btnSoundToggle');
+            const icon = document.getElementById('soundIcon');
+            const text = document.getElementById('soundText');
+
+            if (isSoundEnabled) {
+                ensureAudioContext();
+                btn.className = "bg-emerald-900/60 hover:bg-emerald-800/80 text-emerald-200 text-xs sm:text-sm font-bold px-3 py-2 rounded-xl border border-emerald-500/40 transition flex items-center gap-1.5";
+                icon.className = "fa-solid fa-volume-high text-emerald-400";
+                text.textContent = "효과음 켜짐";
+                playLandSound(true);
+            } else {
+                btn.className = "bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs sm:text-sm font-bold px-3 py-2 rounded-xl border border-slate-600 transition flex items-center gap-1.5";
+                icon.className = "fa-solid fa-volume-xmark text-slate-400";
+                text.textContent = "음소거";
+            }
+        }
+
+        // 1) 동전을 튕겨 올릴 때 회전하는 금속 울림음
+        function playFlickSound() {
+            const ctx = ensureAudioContext();
+            if (!ctx) return;
+
+            const now = ctx.currentTime;
+            const osc1 = ctx.createOscillator();
+            const osc2 = ctx.createOscillator();
+            const gain = ctx.createGain();
+
+            osc1.type = 'sine';
+            osc2.type = 'triangle';
+
+            osc1.frequency.setValueAtTime(1650, now);
+            osc1.frequency.exponentialRampToValueAtTime(3400, now + 0.18);
+            osc1.frequency.exponentialRampToValueAtTime(2400, now + 0.42);
+
+            osc2.frequency.setValueAtTime(2950, now);
+            osc2.frequency.exponentialRampToValueAtTime(4800, now + 0.25);
+
+            gain.gain.setValueAtTime(0.001, now);
+            gain.gain.linearRampToValueAtTime(0.11, now + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.45);
+
+            osc1.connect(gain);
+            osc2.connect(gain);
+            gain.connect(ctx.destination);
+
+            osc1.start(now);
+            osc2.start(now);
+            osc1.stop(now + 0.46);
+            osc2.stop(now + 0.46);
+        }
+
+        // 2) 동전 착지음: 앞면(밝고 경쾌한 고음 화음) vs 뒷면(차분하고 묵직한 중저음 화음)
+        function playLandSound(isHeads, delaySec = 0) {
+            const ctx = ensureAudioContext();
+            if (!ctx) return;
+
+            const startTime = ctx.currentTime + delaySec;
+            // 앞면(C6-E6-G6 계열 금속 차임) / 뒷면(G5-D5 계열 금속 톤)
+            const freqs = isHeads ? [1046.5, 1318.5, 2093.0] : [784.0, 587.3, 1174.7];
+            const baseGain = isHeads ? 0.13 : 0.14;
+
+            freqs.forEach((f, idx) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                osc.type = idx === 0 ? 'triangle' : 'sine';
+                osc.frequency.setValueAtTime(f, startTime);
+
+                const vol = baseGain / (idx + 1);
+                gain.gain.setValueAtTime(0.001, startTime);
+                gain.gain.linearRampToValueAtTime(vol, startTime + 0.008);
+                gain.gain.exponentialRampToValueAtTime(0.0008, startTime + 0.28 + idx * 0.05);
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.start(startTime);
+                osc.stop(startTime + 0.36);
+            });
+        }
+
+        // 3) 25회/100회 대량 시행 및 무한 반복 시 동전 쏟아지는 경쾌한 짤랑임 (클리핑 방지 스로틀링 적용)
+        function playCoinCascadeSound(count, isHeads) {
+            const ctx = ensureAudioContext();
+            if (!ctx) return;
+
+            const nowMs = performance.now();
+            if (nowMs - lastBatchSoundTime < 75) return; // 초고속 무한 반복 시 과도한 중첩 방지
+            lastBatchSoundTime = nowMs;
+
+            const clinks = count >= 100 ? 4 : 3;
+            for (let i = 0; i < clinks; i++) {
+                const startTime = ctx.currentTime + i * 0.032;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                const pitchBase = isHeads ? 2400 : 1950;
+                const randPitch = pitchBase + (Math.random() * 750 - 250) + i * 180;
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(randPitch, startTime);
+
+                gain.gain.setValueAtTime(0.001, startTime);
+                gain.gain.linearRampToValueAtTime(0.065, startTime + 0.005);
+                gain.gain.exponentialRampToValueAtTime(0.0008, startTime + 0.11);
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.start(startTime);
+                osc.stop(startTime + 0.12);
+            }
+        }
+
+        // 4) 교과서 기록 지점(25, 100, 200, 600, 1000회) 달성 알림음
+        function playMilestoneChime() {
+            const ctx = ensureAudioContext();
+            if (!ctx) return;
+
+            const notes = [1318.5, 1568.0, 2093.0]; // E6 -> G6 -> C7
+            notes.forEach((freq, idx) => {
+                const startTime = ctx.currentTime + idx * 0.055;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, startTime);
+
+                gain.gain.setValueAtTime(0.001, startTime);
+                gain.gain.linearRampToValueAtTime(0.09, startTime + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.0008, startTime + 0.32);
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.start(startTime);
+                osc.stop(startTime + 0.34);
+            });
+        }
+
+        // ==========================================
+        // 1. 전역 상태 변수
+        // ==========================================
+        let totalTosses = 0;
+        let headsCount = 0;
+        let recentResults = []; // 최근 25회 결과 ('H' or 'T')
+        let historyData = [];   // { n, relFreq }
+        let isInfiniteRunning = false;
+        let infiniteTimer = null;
+        let isTableMasked = false;
+
+        // 교과서 활동 1 표의 기준 횟수
+        const MILESTONES = [25, 100, 200, 600, 1000, 5000];
+        let recordedMilestones = {};
+
+        // 속도 단계 매핑
+        const SPEED_MAP = {
+            1: { label: '느림 (1x)', interval: 450 },
+            2: { label: '조금 느림 (2x)', interval: 250 },
+            3: { label: '보통 (3x)', interval: 120 },
+            4: { label: '빠름 (4x)', interval: 50 },
+            5: { label: '초고속 (5x)', interval: 15 }
+        };
+
+        // 화면 보기 모드 ('split' | 'screen1' | 'screen2' | 'screen3')
+        let currentViewMode = 'split';
+
+        // 그래프 옵션 상태
+        let chartScaleMode = 'textbook'; // 'textbook' (0.35~0.65 물결선) | 'full' (0~1)
+        let showMathProbLine = true;     // y = 0.5 기준선 표시 여부
+
+        // [화면 3] 우리 반 모둠별 합산 실험 기록 상태 (기본 7모둠, 각 100회)
+        let groupDataList = Array.from({ length: 7 }, (_, idx) => ({
+            groupNum: idx + 1,
+            tosses: 100,
+            heads: '' // 미입력 상태는 빈 문자열
+        }));
+        let isClassTableMasked = false;
+        let classChartScaleMode = 'textbook';
+
+        // DOM 요소 참조
+        const coinElement = document.getElementById('coinElement');
+        const lastResultBadge = document.getElementById('lastResultBadge');
+        const canvas = document.getElementById('convergenceChart');
+        const ctx = canvas.getContext('2d');
+        const classCanvas = document.getElementById('classConvergenceChart');
+        const classCtx = classCanvas.getContext('2d');
+
+        // ==========================================
+        // 2. 화면 모드 전환 (2분할 / 화면1 / 화면2 / 화면3)
+        // ==========================================
+        function setViewMode(mode) {
+            currentViewMode = mode;
+            const grid = document.getElementById('workspaceGrid');
+            const s1 = document.getElementById('screen1Panel');
+            const s2 = document.getElementById('screen2Panel');
+            const s3 = document.getElementById('screen3Panel');
+
+            const btnSplit = document.getElementById('viewModeSplit');
+            const btnS1 = document.getElementById('viewModeScreen1');
+            const btnS2 = document.getElementById('viewModeScreen2');
+            const btnS3 = document.getElementById('viewModeScreen3');
+
+            const icon1 = document.getElementById('iconExpand1');
+            const icon2 = document.getElementById('iconExpand2');
+
+            // 버튼 스타일 초기화
+            const inactiveClass = "flex-1 sm:flex-initial px-3 py-2 rounded-lg text-xs sm:text-sm font-bold text-slate-300 hover:text-white transition flex items-center justify-center gap-1.5";
+            const activeClass = "flex-1 sm:flex-initial px-3 py-2 rounded-lg text-xs sm:text-sm font-bold bg-emerald-600 text-white shadow transition flex items-center justify-center gap-1.5";
+            const inactiveClass3 = "flex-1 sm:flex-initial px-3 py-2 rounded-lg text-xs sm:text-sm font-bold text-indigo-200 hover:text-white border border-indigo-500/40 bg-indigo-950/50 transition flex items-center justify-center gap-1.5";
+            const activeClass3 = "flex-1 sm:flex-initial px-3 py-2 rounded-lg text-xs sm:text-sm font-bold bg-indigo-600 text-white shadow transition flex items-center justify-center gap-1.5";
+
+            btnSplit.className = mode === 'split' ? activeClass : inactiveClass;
+            btnS1.className = mode === 'screen1' ? activeClass : inactiveClass;
+            btnS2.className = mode === 'screen2' ? activeClass : inactiveClass;
+            btnS3.className = mode === 'screen3' ? activeClass3 : inactiveClass3;
+
+            s1.classList.add('hidden');
+            s2.classList.add('hidden');
+            s3.classList.add('hidden');
+
+            if (mode === 'split') {
+                grid.className = "flex-grow max-w-[1600px] w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch";
+                s1.classList.remove('hidden');
+                s2.classList.remove('hidden');
+                icon1.className = "fa-solid fa-expand";
+                icon2.className = "fa-solid fa-expand";
+            } else if (mode === 'screen1') {
+                grid.className = "flex-grow max-w-4xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 gap-6 items-stretch";
+                s1.classList.remove('hidden');
+                icon1.className = "fa-solid fa-compress";
+            } else if (mode === 'screen2') {
+                grid.className = "flex-grow max-w-5xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 gap-6 items-stretch";
+                s2.classList.remove('hidden');
+                icon2.className = "fa-solid fa-compress";
+            } else if (mode === 'screen3') {
+                grid.className = "flex-grow max-w-[1500px] w-full mx-auto p-4 sm:p-6 grid grid-cols-1 gap-6 items-stretch";
+                s3.classList.remove('hidden');
+            }
+
+            // 레이아웃 변경 후 캔버스 크기 재계산
+            setTimeout(() => {
+                resizeCanvas();
+                resizeClassCanvas();
+            }, 30);
+        }
+
+        // ==========================================
+        // 3. 동전 던지기 시뮬레이션 로직
+        // ==========================================
+        function tossCoins(count, animateSingle = false) {
+            let lastIsHeads = true;
+            let hitMilestone = false;
+
+            for (let i = 0; i < count; i++) {
+                totalTosses++;
+                const isHeads = Math.random() < 0.5;
+                if (isHeads) {
+                    headsCount++;
+                }
+                lastIsHeads = isHeads;
+
+                // 최근 25개 결과 배열 업데이트
+                recentResults.push(isHeads ? 'H' : 'T');
+                if (recentResults.length > 25) {
+                    recentResults.shift();
+                }
+
+                const currentRelFreq = headsCount / totalTosses;
+
+                // 교과서 기준 횟수(25, 100, 200, 600, 1000) 도달 시 표 기록
+                if (MILESTONES.includes(totalTosses) && !recordedMilestones[totalTosses]) {
+                    recordedMilestones[totalTosses] = {
+                        heads: headsCount,
+                        relFreq: currentRelFreq.toFixed(3)
+                    };
+                    updateMilestoneTable(totalTosses, headsCount, currentRelFreq.toFixed(3));
+                    hitMilestone = true;
+                }
+
+                // 그래프 렌더링 성능을 위한 샘플링 기록
+                if (shouldRecordPoint(totalTosses)) {
+                    historyData.push({ n: totalTosses, relFreq: currentRelFreq });
+                }
+            }
+
+            // 효과음 재생 (1회 애니메이션 vs 대량/무한 반복)
+            if (animateSingle && count === 1) {
+                playFlickSound();
+                playLandSound(lastIsHeads, 0.46); // 동전 착지 타이밍(0.55s)에 맞춘 앞/뒷면 고유 착지음
+            } else {
+                playCoinCascadeSound(count, lastIsHeads);
+                if (hitMilestone) {
+                    playMilestoneChime();
+                }
+            }
+
+            triggerCoinVisual(lastIsHeads, animateSingle);
+            updateRecentGridUI();
+            updateAllStatsUI();
+            drawChart();
+        }
+
+        function shouldRecordPoint(n) {
+            if (n <= 200) return true;
+            if (n <= 1000) return n % 5 === 0;
+            if (n <= 5000) return n % 25 === 0;
+            if (n <= 20000) return n % 100 === 0;
+            return n % 500 === 0;
+        }
+
+        function triggerCoinVisual(isHeads, fullAnimation) {
+            if (fullAnimation) {
+                coinElement.classList.remove('flipping-heads', 'flipping-tails');
+                void coinElement.offsetWidth;
+                coinElement.classList.add(isHeads ? 'flipping-heads' : 'flipping-tails');
+            } else {
+                coinElement.classList.remove('flipping-heads', 'flipping-tails');
+                coinElement.style.transform = isHeads ? 'rotateY(0deg)' : 'rotateY(180deg)';
+            }
+
+            if (isHeads) {
+                lastResultBadge.textContent = '결과: 앞면 (Heads)';
+                lastResultBadge.className = 'text-xs font-extrabold px-3 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300';
+            } else {
+                lastResultBadge.textContent = '결과: 뒷면 (Tails)';
+                lastResultBadge.className = 'text-xs font-extrabold px-3 py-1 rounded-full bg-slate-200 text-slate-800 border border-slate-300';
+            }
+        }
+
+        function updateRecentGridUI() {
+            const grid = document.getElementById('recentCoinsGrid');
+            const summary = document.getElementById('recentSummaryText');
+
+            if (recentResults.length === 0) {
+                grid.innerHTML = '<span class="text-xs text-slate-400">동전을 던지면 앞(황색)·뒤(회색) 결과가 여기에 나열됩니다.</span>';
+                summary.textContent = '기록 없음';
+                return;
+            }
+
+            const recentHeads = recentResults.filter(r => r === 'H').length;
+            summary.textContent = `최근 ${recentResults.length}회 중 앞면 ${recentHeads}회`;
+
+            grid.innerHTML = recentResults.map(res => {
+                if (res === 'H') {
+                    return `<span class="w-6 h-6 rounded-full bg-amber-400 border border-amber-600 text-amber-950 font-black text-[11px] inline-flex items-center justify-center shadow-xs" title="앞면">앞</span>`;
+                } else {
+                    return `<span class="w-6 h-6 rounded-full bg-slate-300 border border-slate-500 text-slate-800 font-bold text-[11px] inline-flex items-center justify-center" title="뒷면">뒤</span>`;
+                }
+            }).join('');
+        }
+
+        // ==========================================
+        // 4. 통계 현황 및 교과서 표 업데이트
+        // ==========================================
+        function updateAllStatsUI() {
+            const tailsCount = totalTosses - headsCount;
+            const relFreq = totalTosses > 0 ? (headsCount / totalTosses) : 0;
+            const diff = Math.abs(relFreq - 0.5);
+
+            // 화면 1 카운터
+            document.getElementById('statTotal').textContent = totalTosses.toLocaleString();
+            document.getElementById('statHeads').textContent = headsCount.toLocaleString();
+            document.getElementById('statTails').textContent = tailsCount.toLocaleString();
+
+            // 화면 2 수렴 비교 패널
+            document.getElementById('panelRelFreq').textContent = relFreq.toFixed(3);
+            document.getElementById('panelFraction').textContent = `(${headsCount.toLocaleString()} / ${totalTosses.toLocaleString()})`;
+
+            const diffEl = document.getElementById('panelDiffText');
+            const barEl = document.getElementById('convergenceBar');
+            const pctEl = document.getElementById('convergencePercent');
+
+            if (totalTosses === 0) {
+                diffEl.textContent = '오차: -';
+                barEl.style.width = '0%';
+                pctEl.textContent = '대기 중';
+            } else {
+                diffEl.textContent = `오차: ${diff.toFixed(4)}`;
+                // 오차가 0.25 이상이면 0%, 0이면 100%로 수렴 근접도 계산
+                const proximity = Math.max(0, Math.min(100, (1 - diff / 0.25) * 100));
+                barEl.style.width = `${proximity.toFixed(1)}%`;
+                pctEl.textContent = `${proximity.toFixed(1)}% 수렴`;
+            }
+        }
+
+        function updateMilestoneTable(milestone, heads, relFreqStr) {
+            const hCell = document.getElementById(`cell-heads-${milestone}`);
+            const rCell = document.getElementById(`cell-rel-${milestone}`);
+
+            if (hCell && rCell) {
+                hCell.textContent = heads.toLocaleString();
+                hCell.classList.remove('text-slate-400');
+                hCell.classList.add('milestone-filled');
+
+                rCell.textContent = relFreqStr;
+                rCell.classList.remove('text-slate-400');
+                rCell.classList.add('milestone-filled');
+                if (isTableMasked) {
+                    rCell.classList.add('cell-masked');
+                }
+            }
+        }
+
+        // 교사용 상대도수 빈칸 가리기/공개 토글
+        function toggleMaskMode() {
+            isTableMasked = !isTableMasked;
+            const btnText = document.getElementById('maskBtnText');
+            const icon = document.getElementById('maskIcon');
+
+            if (isTableMasked) {
+                btnText.textContent = '상대도수 모두 공개';
+                icon.className = 'fa-solid fa-eye';
+            } else {
+                btnText.textContent = '상대도수 칸 가리기 (발표용)';
+                icon.className = 'fa-solid fa-eye-slash';
+            }
+
+            MILESTONES.forEach(m => {
+                const rCell = document.getElementById(`cell-rel-${m}`);
+                if (rCell && recordedMilestones[m]) {
+                    if (isTableMasked) {
+                        rCell.classList.add('cell-masked');
+                    } else {
+                        rCell.classList.remove('cell-masked');
+                    }
+                }
+            });
+        }
+
+        function revealSingleCell(cell) {
+            if (cell.classList.contains('cell-masked')) {
+                cell.classList.remove('cell-masked');
+            }
+        }
+
+        // ==========================================
+        // 5. 화면 2: 학생 추측 확인 & 기준선 토글
+        // ==========================================
+        function checkStudentGuess() {
+            const input = document.getElementById('guessInput');
+            const feedback = document.getElementById('guessFeedback');
+            const val = parseFloat(input.value);
+
+            feedback.classList.remove('hidden');
+
+            if (isNaN(val) || val < 0 || val > 1) {
+                feedback.className = 'mt-2.5 text-xs sm:text-sm font-semibold px-3 py-2 rounded-xl bg-amber-100 text-amber-900 border border-amber-300';
+                feedback.innerHTML = '<i class="fa-solid fa-circle-exclamation mr-1"></i> 0과 1 사이의 소수를 입력해 주세요. (예: 0.5)';
+                return;
+            }
+
+            if (Math.abs(val - 0.5) < 0.001) {
+                feedback.className = 'mt-2.5 text-xs sm:text-sm font-bold px-3 py-2 rounded-xl bg-emerald-100 text-emerald-900 border border-emerald-300';
+                feedback.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i> 정확합니다! 동전 앞면이 나올 수학적 확률은 <strong>1/2 (= 0.5)</strong>이므로, 시행 횟수가 많아질수록 상대도수는 <strong>0.5</strong>에 가까워집니다.';
+                if (!showMathProbLine) toggleMathProbLine();
+            } else {
+                feedback.className = 'mt-2.5 text-xs sm:text-sm font-semibold px-3 py-2 rounded-xl bg-rose-50 text-rose-900 border border-rose-200';
+                feedback.innerHTML = `<i class="fa-solid fa-lightbulb text-amber-500 mr-1"></i> 입력한 값은 <strong>${val}</strong>입니다. 동전을 1,000회 이상 무한 반복으로 던져보며 그래프가 어느 숫자에 모이는지 다시 확인해 보세요!`;
+            }
+        }
+
+        function toggleMathProbLine() {
+            showMathProbLine = !showMathProbLine;
+            const btn = document.getElementById('btnToggleRefLine');
+            const text = document.getElementById('refLineText');
+            const icon = document.getElementById('refLineIcon');
+
+            if (showMathProbLine) {
+                btn.className = 'px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition flex items-center gap-1.5';
+                text.textContent = '수학적 확률(0.5) 선 숨기기';
+                icon.className = 'fa-solid fa-eye';
+            } else {
+                btn.className = 'px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition flex items-center gap-1.5';
+                text.textContent = '수학적 확률(0.5) 선 표시';
+                icon.className = 'fa-solid fa-eye-slash';
+            }
+            drawChart();
+        }
+
+        // ==========================================
+        // 6. 무한 반복 및 초기화 제어
+        // ==========================================
+        function toggleInfiniteLoop() {
+            if (isInfiniteRunning) {
+                stopInfiniteLoop();
+            } else {
+                startInfiniteLoop();
+            }
+        }
+
+        function startInfiniteLoop() {
+            isInfiniteRunning = true;
+            const btn = document.getElementById('btnInfinite');
+            btn.classList.remove('bg-rose-600', 'hover:bg-rose-500');
+            btn.classList.add('bg-amber-600', 'hover:bg-amber-500', 'infinite-active');
+            document.getElementById('infiniteIcon').className = 'fa-solid fa-pause';
+            document.getElementById('infiniteText').textContent = '무한 반복 일시정지';
+
+            const speedLevel = parseInt(document.getElementById('speedRange').value, 10);
+            infiniteTimer = setInterval(() => {
+                tossCoins(100, false);
+            }, SPEED_MAP[speedLevel].interval);
+        }
+
+        function stopInfiniteLoop() {
+            isInfiniteRunning = false;
+            if (infiniteTimer) {
+                clearInterval(infiniteTimer);
+                infiniteTimer = null;
+            }
+            const btn = document.getElementById('btnInfinite');
+            btn.classList.remove('bg-amber-600', 'hover:bg-amber-500', 'infinite-active');
+            btn.classList.add('bg-rose-600', 'hover:bg-rose-500');
+            document.getElementById('infiniteIcon').className = 'fa-solid fa-infinity';
+            document.getElementById('infiniteText').textContent = '100회씩 무한 반복 시작';
+        }
+
+        document.getElementById('speedRange').addEventListener('input', (e) => {
+            const level = parseInt(e.target.value, 10);
+            document.getElementById('speedLabel').textContent = SPEED_MAP[level].label;
+            if (isInfiniteRunning) {
+                stopInfiniteLoop();
+                startInfiniteLoop();
+            }
+        });
+
+        function resetExperiment() {
+            stopInfiniteLoop();
+            totalTosses = 0;
+            headsCount = 0;
+            recentResults = [];
+            historyData = [];
+            recordedMilestones = {};
+
+            coinElement.classList.remove('flipping-heads', 'flipping-tails');
+            coinElement.style.transform = 'rotateY(0deg)';
+            lastResultBadge.textContent = '버튼을 눌러 실험 시작';
+            lastResultBadge.className = 'text-xs font-extrabold px-3 py-1 rounded-full bg-slate-200 text-slate-700';
+
+            MILESTONES.forEach(m => {
+                const hCell = document.getElementById(`cell-heads-${m}`);
+                const rCell = document.getElementById(`cell-rel-${m}`);
+                if (hCell && rCell) {
+                    hCell.textContent = '-';
+                    hCell.className = 'py-2.5 px-2 border-r border-slate-200 text-slate-400';
+                    rCell.textContent = '-';
+                    rCell.className = 'py-2.5 px-2 border-r border-slate-200 text-slate-400';
+                }
+            });
+
+            document.getElementById('guessInput').value = '';
+            document.getElementById('guessFeedback').classList.add('hidden');
+
+            updateRecentGridUI();
+            updateAllStatsUI();
+            drawChart();
+        }
+
+        // ==========================================
+        // 7. 교과서 스타일 수렴 그래프 렌더링 (물결선 축 포함)
+        // ==========================================
+        function setChartScale(mode) {
+            chartScaleMode = mode;
+            const btnTextbook = document.getElementById('btnScaleTextbook');
+            const btnFull = document.getElementById('btnScaleFull');
+
+            if (mode === 'textbook') {
+                btnTextbook.className = 'px-2.5 py-1.5 rounded-lg text-xs font-bold bg-white text-emerald-700 shadow-sm transition';
+                btnFull.className = 'px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition';
+            } else {
+                btnFull.className = 'px-2.5 py-1.5 rounded-lg text-xs font-bold bg-white text-emerald-700 shadow-sm transition';
+                btnTextbook.className = 'px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition';
+            }
+            drawChart();
+        }
+
+        function resizeCanvas() {
+            const container = document.getElementById('chartContainer');
+            if (!container || container.offsetParent === null) return;
+
+            const dpr = window.devicePixelRatio || 1;
+            const rect = container.getBoundingClientRect();
+
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.scale(dpr, dpr);
+            drawChart();
+        }
+
+        function drawChart() {
+            const container = document.getElementById('chartContainer');
+            if (!container || container.offsetParent === null) return;
+
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            ctx.clearRect(0, 0, width, height);
+
+            const padLeft = 54;
+            const padRight = 26;
+            const padTop = 24;
+            const padBottom = 42;
+
+            const plotW = width - padLeft - padRight;
+            const plotH = height - padTop - padBottom;
+            if (plotW <= 0 || plotH <= 0) return;
+
+            // Y축 범위 설정
+            const yMin = chartScaleMode === 'textbook' ? 0.35 : 0.0;
+            const yMax = chartScaleMode === 'textbook' ? 0.65 : 1.0;
+
+            // X축 범위 설정 (초기 1000회, 초과 시 500회 단위로 확장)
+            const xMin = 0;
+            const xMax = Math.max(1000, Math.ceil(totalTosses / 500) * 500);
+
+            const getX = (n) => padLeft + ((n - xMin) / (xMax - xMin)) * plotW;
+            const getY = (val) => {
+                const clamped = Math.max(yMin, Math.min(yMax, val));
+                return padTop + plotH - ((clamped - yMin) / (yMax - yMin)) * plotH;
+            };
+
+            // 1. 가로 눈금선 및 Y축 라벨
+            ctx.lineWidth = 1;
+            ctx.font = '600 11px Inter, Noto Sans KR, sans-serif';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+
+            const yTicks = chartScaleMode === 'textbook'
+                ? [0.40, 0.45, 0.50, 0.55, 0.60, 0.65]
+                : [0.00, 0.25, 0.50, 0.75, 1.00];
+
+            yTicks.forEach(tick => {
+                const y = getY(tick);
+                ctx.beginPath();
+                ctx.strokeStyle = '#e2e8f0';
+                ctx.moveTo(padLeft, y);
+                ctx.lineTo(padLeft + plotW, y);
+                ctx.stroke();
+
+                ctx.fillStyle = (tick === 0.5 && showMathProbLine) ? '#e11d48' : '#475569';
+                ctx.fillText(tick.toFixed(2), padLeft - 8, y);
+            });
+
+            // 교과서 축 모드일 때 원점(0) 및 하단 물결선 표시
+            if (chartScaleMode === 'textbook') {
+                ctx.fillStyle = '#475569';
+                ctx.fillText('0', padLeft - 8, padTop + plotH);
+
+                // 물결선 그리기 (y = 0.37 부근)
+                const waveY = padTop + plotH - 12;
+                ctx.save();
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(padLeft - 4, waveY - 4, plotW + 8, 8);
+
+                ctx.strokeStyle = '#64748b';
+                ctx.lineWidth = 1.5;
+                [-2.5, 2.5].forEach(offset => {
+                    ctx.beginPath();
+                    for (let x = padLeft - 4; x <= padLeft + plotW + 4; x += 6) {
+                        const y = waveY + offset + Math.sin((x - padLeft) * 0.25) * 2.2;
+                        if (x === padLeft - 4) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+                });
+                ctx.restore();
+            }
+
+            // 2. 세로 눈금선 및 X축 라벨
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            const xSteps = 10;
+            for (let i = 1; i <= xSteps; i++) {
+                const val = Math.round((xMax / xSteps) * i);
+                const x = getX(val);
+
+                ctx.beginPath();
+                ctx.strokeStyle = '#e2e8f0';
+                ctx.moveTo(x, padTop);
+                ctx.lineTo(x, padTop + plotH);
+                ctx.stroke();
+
+                ctx.fillStyle = '#475569';
+                const labelText = val >= 10000 ? `${(val / 1000).toFixed(1)}k` : val.toString();
+                ctx.fillText(labelText, x, padTop + plotH + 8);
+            }
+
+            // 축 제목
+            ctx.fillStyle = '#1e293b';
+            ctx.font = '700 12px Noto Sans KR, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('던진 횟수 (회)', padLeft + plotW / 2, height - 14);
+
+            ctx.save();
+            ctx.translate(14, padTop + plotH / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('상대도수', 0, 0);
+            ctx.restore();
+
+            // 3. 축 테두리 선
+            ctx.strokeStyle = '#64748b';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(padLeft, padTop);
+            ctx.lineTo(padLeft, padTop + plotH);
+            ctx.lineTo(padLeft + plotW, padTop + plotH);
+            ctx.stroke();
+
+            // 4. 수학적 확률(0.50) 기준선 (토글 가능)
+            if (showMathProbLine) {
+                const yHalf = getY(0.5);
+                ctx.save();
+                ctx.beginPath();
+                ctx.setLineDash([6, 4]);
+                ctx.strokeStyle = '#e11d48';
+                ctx.lineWidth = 2;
+                ctx.moveTo(padLeft, yHalf);
+                ctx.lineTo(padLeft + plotW, yHalf);
+                ctx.stroke();
+                ctx.restore();
+
+                ctx.fillStyle = '#e11d48';
+                ctx.font = '700 11px Noto Sans KR, sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText('수학적 확률 (0.50)', padLeft + plotW - 6, yHalf - 13);
+            }
+
+            // 5. 통계적 확률(상대도수) 꺾은선 그래프
+            if (historyData.length > 0) {
+                ctx.beginPath();
+                ctx.strokeStyle = '#059669';
+                ctx.lineWidth = 2.5;
+                ctx.lineJoin = 'round';
+
+                historyData.forEach((pt, idx) => {
+                    const px = getX(pt.n);
+                    const py = getY(pt.relFreq);
+                    if (idx === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                });
+                ctx.stroke();
+
+                // 최신 데이터 포인트 강조 점
+                const lastPt = historyData[historyData.length - 1];
+                const lastX = getX(lastPt.n);
+                const lastY = getY(lastPt.relFreq);
+
+                ctx.beginPath();
+                ctx.fillStyle = 'rgba(5, 150, 105, 0.25)';
+                ctx.arc(lastX, lastY, 8, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.fillStyle = '#059669';
+                ctx.arc(lastX, lastY, 4.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 현재 상대도수 수치 라벨
+                ctx.fillStyle = '#065f46';
+                ctx.font = '800 11px Inter, sans-serif';
+                ctx.textAlign = lastX > padLeft + plotW - 65 ? 'right' : 'left';
+                const offsetX = lastX > padLeft + plotW - 65 ? -10 : 10;
+                ctx.fillText(lastPt.relFreq.toFixed(3), lastX + offsetX, lastY - 8);
+            } else {
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '600 13px Noto Sans KR, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('화면 1에서 동전을 던지면 상대도수 변화 그래프가 실시간으로 그려집니다.', padLeft + plotW / 2, padTop + plotH / 2 - 16);
+            }
+        }
+
+        // ==========================================
+        // 8. 모달 및 창 크기 변경 이벤트
+        // ==========================================
+        // 8. [화면 3] 우리 반 실제 실험 집계 로직
+        // ==========================================
+        function rebuildClassKeypad() {
+            const keypad = document.getElementById('classQuickKeypad');
+            const maxTosses = Math.max(1, parseInt(document.getElementById('classStudentTosses').value, 10) || 25);
+            document.getElementById('keypadMaxLabel').textContent = maxTosses;
+            document.getElementById('classHeadsInput').max = maxTosses;
+
+            // 시행 횟수가 40 이하일 때만 개별 원터치 버튼 생성
+            const limit = Math.min(maxTosses, 40);
+            let html = '';
+            for (let i = 0; i <= limit; i++) {
+                const isHalf = Math.abs(i - maxTosses / 2) <= 0.5;
+                const btnStyle = isHalf
+                    ? 'bg-indigo-100 hover:bg-indigo-600 hover:text-white text-indigo-900 border-indigo-300 font-black'
+                    : 'bg-white hover:bg-indigo-600 hover:text-white text-slate-700 border-slate-300 font-bold';
+                html += `<button type="button" onclick="quickAddClassHeads(${i})" class="py-2 rounded-lg border text-xs sm:text-sm transition active:scale-90 shadow-2xs ${btnStyle}">${i}</button>`;
+            }
+            keypad.innerHTML = html;
+        }
+
+        function quickAddClassHeads(headsVal) {
+            document.getElementById('classHeadsInput').value = headsVal;
+            addClassStudentRecord();
+        }
+
+        function addClassStudentRecord() {
+            const labelInput = document.getElementById('classStudentLabel');
+            const tossesInput = document.getElementById('classStudentTosses');
+            const headsInput = document.getElementById('classHeadsInput');
+
+            const tosses = Math.max(1, parseInt(tossesInput.value, 10) || 25);
+            const heads = parseInt(headsInput.value, 10);
+
+            if (isNaN(heads) || heads < 0 || heads > tosses) {
+                headsInput.classList.add('ring-2', 'ring-rose-500', 'border-rose-500');
+                setTimeout(() => headsInput.classList.remove('ring-2', 'ring-rose-500', 'border-rose-500'), 700);
+                headsInput.focus();
+                return;
+            }
+
+            const label = labelInput.value.trim() || `${classRecords.length + 1}번 학생`;
+
+            classRecords.push({
+                id: Date.now() + Math.random(),
+                label,
+                tosses,
+                heads
+            });
+
+            // 다음 학생 번호 자동 증가 및 입력칸 초기화
+            const nextNum = classRecords.length + 1;
+            labelInput.value = `${nextNum}번 학생`;
+            headsInput.value = '';
+            headsInput.focus();
+
+            playLandSound(heads >= tosses / 2);
+            updateClassExperimentUI();
+        }
+
+        function removeClassRecord(id) {
+            classRecords = classRecords.filter(r => r.id !== id);
+            document.getElementById('classStudentLabel').value = `${classRecords.length + 1}번 학생`;
+            updateClassExperimentUI();
+        }
+
+        function editClassRecord(id) {
+            const target = classRecords.find(r => r.id === id);
+            if (!target) return;
+            document.getElementById('classStudentLabel').value = target.label;
+            document.getElementById('classStudentTosses').value = target.tosses;
+            document.getElementById('classHeadsInput').value = target.heads;
+            rebuildClassKeypad();
+            classRecords = classRecords.filter(r => r.id !== id);
+            updateClassExperimentUI();
+            document.getElementById('classHeadsInput').focus();
+        }
+
+        function resetClassRecords() {
+            classRecords = [];
+            document.getElementById('classStudentLabel').value = '1번 학생';
+            document.getElementById('classHeadsInput').value = '';
+            updateClassExperimentUI();
+        }
+
+        function fillSampleClassData() {
+            // 실제 중학교 한 반(24명, 1인당 25회 = 총 600회) 현실적인 이항분포 B(25, 0.5) 실험 결과 예시
+            const sampleHeads = [14, 10, 15, 11, 13, 12, 9, 16, 12, 13, 11, 14, 12, 10, 13, 15, 11, 12, 14, 13, 11, 12, 13, 12];
+            classRecords = sampleHeads.map((h, idx) => ({
+                id: idx + 1,
+                label: `${idx + 1}번 학생`,
+                tosses: 25,
+                heads: h
+            }));
+            document.getElementById('classStudentLabel').value = '25번 학생';
+            playMilestoneChime();
+            updateClassExperimentUI();
+        }
+
+        function updateClassExperimentUI() {
+            const studentCount = classRecords.length;
+            let cumTosses = 0;
+            let cumHeads = 0;
+
+            classRecords.forEach(r => {
+                cumTosses += r.tosses;
+                cumHeads += r.heads;
+            });
+
+            const cumTails = cumTosses - cumHeads;
+            const relFreq = cumTosses > 0 ? (cumHeads / cumTosses) : 0;
+            const diff = Math.abs(relFreq - 0.5);
+
+            // 상단 대시보드 카드 업데이트
+            document.getElementById('classStudentCount').textContent = studentCount;
+            document.getElementById('classTotalTosses').textContent = cumTosses.toLocaleString();
+            document.getElementById('classTossFormula').textContent = `${studentCount}명 누적 시행`;
+            document.getElementById('classTotalHeads').textContent = cumHeads.toLocaleString();
+            document.getElementById('classTotalTailsSub').textContent = `뒷면: ${cumTails.toLocaleString()}회`;
+            document.getElementById('classRelFreq').textContent = cumTosses > 0 ? relFreq.toFixed(3) : '0.000';
+            document.getElementById('classDiffFromHalf').textContent = cumTosses > 0
+                ? `수학적 확률(0.5)과의 차이: ${diff.toFixed(4)}`
+                : '수학적 확률(0.5)과의 차이: -';
+
+            // 개별 학생 기록 칩 업데이트
+            document.getElementById('recordChipCount').textContent = studentCount;
+            const listEl = document.getElementById('classStudentRecordsList');
+            if (studentCount === 0) {
+                listEl.innerHTML = '<p class="text-xs text-slate-400 py-4 text-center w-full">아직 입력된 학생 기록이 없습니다. 위에서 학생별 앞면 횟수를 입력해 주세요.</p>';
+            } else {
+                listEl.innerHTML = classRecords.map(r => {
+                    const rFreq = (r.heads / r.tosses).toFixed(2);
+                    return `
+                        <div class="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-indigo-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs transition group">
+                            <button type="button" onclick="editClassRecord(${r.id})" class="flex items-center gap-1.5 text-left" title="클릭하여 수정">
+                                <span class="font-extrabold text-indigo-900">${r.label}</span>
+                                <span class="font-bold text-slate-700">${r.heads}/${r.tosses}</span>
+                                <span class="text-[11px] font-semibold text-emerald-700">(${rFreq})</span>
+                            </button>
+                            <button type="button" onclick="removeClassRecord(${r.id})" class="text-slate-400 hover:text-rose-600 ml-0.5 px-1 font-bold" title="삭제">
+                                ×
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+                listEl.scrollTop = listEl.scrollHeight;
+            }
+
+            // 교과서 활동 1 누적 표 업데이트 (1명, 4명, 8명, 16명, 24명 + 전체)
+            const checkpoints = [1, 4, 8, 16, 24];
+            checkpoints.forEach(cp => {
+                const hCell = document.getElementById(`class-cell-heads-${cp}`);
+                const rCell = document.getElementById(`class-cell-rel-${cp}`);
+                if (!hCell || !rCell) return;
+
+                if (studentCount >= cp) {
+                    let subT = 0;
+                    let subH = 0;
+                    for (let i = 0; i < cp; i++) {
+                        subT += classRecords[i].tosses;
+                        subH += classRecords[i].heads;
+                    }
+                    const subRel = (subH / subT).toFixed(3);
+                    hCell.textContent = subH.toLocaleString();
+                    hCell.className = 'py-2.5 px-1.5 border-r border-slate-200 milestone-filled';
+
+                    rCell.textContent = subRel;
+                    rCell.className = 'py-2.5 px-1.5 border-r border-slate-200 milestone-filled' + (isClassTableMasked ? ' cell-masked' : '');
+                } else {
+                    hCell.textContent = '-';
+                    hCell.className = 'py-2.5 px-1.5 border-r border-slate-200 text-slate-400';
+                    rCell.textContent = '-';
+                    rCell.className = 'py-2.5 px-1.5 border-r border-slate-200 text-slate-400';
+                }
+            });
+
+            // 전체 누적 열 업데이트
+            document.getElementById('classTableTotalHeader').textContent = `(${cumTosses.toLocaleString()}회)`;
+            const allHCell = document.getElementById('class-cell-heads-all');
+            const allRCell = document.getElementById('class-cell-rel-all');
+            if (studentCount > 0) {
+                allHCell.textContent = cumHeads.toLocaleString();
+                allRCell.textContent = relFreq.toFixed(3);
+                if (isClassTableMasked) allRCell.classList.add('cell-masked');
+                else allRCell.classList.remove('cell-masked');
+            } else {
+                allHCell.textContent = '-';
+                allRCell.textContent = '-';
+                allRCell.classList.remove('cell-masked');
+            }
+
+            drawClassChart();
+        }
+
+        function toggleClassTableMask() {
+            isClassTableMasked = !isClassTableMasked;
+            const btnText = document.getElementById('classMaskBtnText');
+            const icon = document.getElementById('classMaskIcon');
+
+            if (isClassTableMasked) {
+                btnText.textContent = '상대도수 모두 공개';
+                icon.className = 'fa-solid fa-eye';
+            } else {
+                btnText.textContent = '상대도수 칸 가리기 (발표용)';
+                icon.className = 'fa-solid fa-eye-slash';
+            }
+            updateClassExperimentUI();
+        }
+
+        function setClassChartScale(mode) {
+            classChartScaleMode = mode;
+            const btnT = document.getElementById('btnClassScaleTextbook');
+            const btnF = document.getElementById('btnClassScaleFull');
+
+            if (mode === 'textbook') {
+                btnT.className = 'px-2.5 py-1 rounded-lg text-xs font-bold bg-white text-indigo-700 border border-indigo-200 shadow-2xs transition';
+                btnF.className = 'px-2.5 py-1 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition';
+            } else {
+                btnF.className = 'px-2.5 py-1 rounded-lg text-xs font-bold bg-white text-indigo-700 border border-indigo-200 shadow-2xs transition';
+                btnT.className = 'px-2.5 py-1 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition';
+            }
+            drawClassChart();
+        }
+
+        function resizeClassCanvas() {
+            const container = document.getElementById('classChartContainer');
+            if (!container || container.offsetParent === null) return;
+
+            const dpr = window.devicePixelRatio || 1;
+            const rect = container.getBoundingClientRect();
+
+            classCanvas.width = rect.width * dpr;
+            classCanvas.height = rect.height * dpr;
+            classCtx.setTransform(1, 0, 0, 1, 0, 0);
+            classCtx.scale(dpr, dpr);
+            drawClassChart();
+        }
+
+        function drawClassChart() {
+            const container = document.getElementById('classChartContainer');
+            if (!container || container.offsetParent === null) return;
+
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            classCtx.clearRect(0, 0, width, height);
+
+            const padLeft = 52;
+            const padRight = 26;
+            const padTop = 22;
+            const padBottom = 40;
+
+            const plotW = width - padLeft - padRight;
+            const plotH = height - padTop - padBottom;
+            if (plotW <= 0 || plotH <= 0) return;
+
+            // 누적 데이터 포인트 생성
+            let cumT = 0;
+            let cumH = 0;
+            const points = classRecords.map((r, idx) => {
+                cumT += r.tosses;
+                cumH += r.heads;
+                return {
+                    studentIdx: idx + 1,
+                    n: cumT,
+                    relFreq: cumH / cumT
+                };
+            });
+
+            const yMin = classChartScaleMode === 'textbook' ? 0.35 : 0.0;
+            const yMax = classChartScaleMode === 'textbook' ? 0.65 : 1.0;
+
+            const maxN = points.length > 0 ? points[points.length - 1].n : 600;
+            const xMax = Math.max(600, Math.ceil(maxN / 100) * 100);
+
+            const getX = (n) => padLeft + (n / xMax) * plotW;
+            const getY = (val) => {
+                const clamped = Math.max(yMin, Math.min(yMax, val));
+                return padTop + plotH - ((clamped - yMin) / (yMax - yMin)) * plotH;
+            };
+
+            // 가로 눈금선
+            classCtx.lineWidth = 1;
+            classCtx.font = '600 11px Inter, Noto Sans KR, sans-serif';
+            classCtx.textAlign = 'right';
+            classCtx.textBaseline = 'middle';
+
+            const yTicks = classChartScaleMode === 'textbook'
+                ? [0.40, 0.45, 0.50, 0.55, 0.60, 0.65]
+                : [0.00, 0.25, 0.50, 0.75, 1.00];
+
+            yTicks.forEach(tick => {
+                const y = getY(tick);
+                classCtx.beginPath();
+                classCtx.strokeStyle = '#e2e8f0';
+                classCtx.moveTo(padLeft, y);
+                classCtx.lineTo(padLeft + plotW, y);
+                classCtx.stroke();
+
+                classCtx.fillStyle = tick === 0.5 ? '#e11d48' : '#475569';
+                classCtx.fillText(tick.toFixed(2), padLeft - 8, y);
+            });
+
+            if (classChartScaleMode === 'textbook') {
+                classCtx.fillStyle = '#475569';
+                classCtx.fillText('0', padLeft - 8, padTop + plotH);
+
+                const waveY = padTop + plotH - 12;
+                classCtx.save();
+                classCtx.fillStyle = '#ffffff';
+                classCtx.fillRect(padLeft - 4, waveY - 4, plotW + 8, 8);
+                classCtx.strokeStyle = '#64748b';
+                classCtx.lineWidth = 1.5;
+                [-2.5, 2.5].forEach(offset => {
+                    classCtx.beginPath();
+                    for (let x = padLeft - 4; x <= padLeft + plotW + 4; x += 6) {
+                        const y = waveY + offset + Math.sin((x - padLeft) * 0.25) * 2.2;
+                        if (x === padLeft - 4) classCtx.moveTo(x, y);
+                        else classCtx.lineTo(x, y);
+                    }
+                    classCtx.stroke();
+                });
+                classCtx.restore();
+            }
+
+            // 세로 눈금선
+            classCtx.textAlign = 'center';
+            classCtx.textBaseline = 'top';
+            const xSteps = 6;
+            for (let i = 1; i <= xSteps; i++) {
+                const val = Math.round((xMax / xSteps) * i);
+                const x = getX(val);
+                classCtx.beginPath();
+                classCtx.strokeStyle = '#e2e8f0';
+                classCtx.moveTo(x, padTop);
+                classCtx.lineTo(x, padTop + plotH);
+                classCtx.stroke();
+
+                classCtx.fillStyle = '#475569';
+                classCtx.fillText(`${val}회`, x, padTop + plotH + 8);
+            }
+
+            // 축 제목 및 테두리
+            classCtx.fillStyle = '#1e293b';
+            classCtx.font = '700 11px Noto Sans KR, sans-serif';
+            classCtx.fillText('학급 누적 던진 횟수 (회)', padLeft + plotW / 2, height - 13);
+
+            classCtx.strokeStyle = '#64748b';
+            classCtx.lineWidth = 1.5;
+            classCtx.beginPath();
+            classCtx.moveTo(padLeft, padTop);
+            classCtx.lineTo(padLeft, padTop + plotH);
+            classCtx.lineTo(padLeft + plotW, padTop + plotH);
+            classCtx.stroke();
+
+            // 수학적 확률 0.5 기준선
+            const yHalf = getY(0.5);
+            classCtx.save();
+            classCtx.beginPath();
+            classCtx.setLineDash([6, 4]);
+            classCtx.strokeStyle = '#e11d48';
+            classCtx.lineWidth = 2;
+            classCtx.moveTo(padLeft, yHalf);
+            classCtx.lineTo(padLeft + plotW, yHalf);
+            classCtx.stroke();
+            classCtx.restore();
+
+            classCtx.fillStyle = '#e11d48';
+            classCtx.font = '700 11px Noto Sans KR, sans-serif';
+            classCtx.textAlign = 'right';
+            classCtx.fillText('수학적 확률 (0.50)', padLeft + plotW - 6, yHalf - 13);
+
+            // 우리 반 누적 꺾은선 및 각 학생 지점 점(Dot) 그리기
+            if (points.length > 0) {
+                classCtx.beginPath();
+                classCtx.strokeStyle = '#4f46e5';
+                classCtx.lineWidth = 2.5;
+                classCtx.lineJoin = 'round';
+
+                points.forEach((pt, idx) => {
+                    const px = getX(pt.n);
+                    const py = getY(pt.relFreq);
+                    if (idx === 0) classCtx.moveTo(px, py);
+                    else classCtx.lineTo(px, py);
+                });
+                classCtx.stroke();
+
+                // 학생 추가 시점마다 동그라미 마커 표시
+                points.forEach((pt, idx) => {
+                    const px = getX(pt.n);
+                    const py = getY(pt.relFreq);
+                    const isLast = idx === points.length - 1;
+
+                    classCtx.beginPath();
+                    classCtx.fillStyle = isLast ? '#059669' : '#4f46e5';
+                    classCtx.arc(px, py, isLast ? 5.5 : 3.5, 0, Math.PI * 2);
+                    classCtx.fill();
+
+                    if (isLast) {
+                        classCtx.beginPath();
+                        classCtx.fillStyle = 'rgba(5, 150, 105, 0.25)';
+                        classCtx.arc(px, py, 10, 0, Math.PI * 2);
+                        classCtx.fill();
+
+                        classCtx.fillStyle = '#065f46';
+                        classCtx.font = '800 11px Inter, sans-serif';
+                        classCtx.textAlign = px > padLeft + plotW - 70 ? 'right' : 'left';
+                        const offsetX = px > padLeft + plotW - 70 ? -10 : 10;
+                        classCtx.fillText(`${pt.relFreq.toFixed(3)} (${pt.studentIdx}명)`, px + offsetX, py - 10);
+                    }
+                });
+            } else {
+                classCtx.fillStyle = '#94a3b8';
+                classCtx.font = '600 13px Noto Sans KR, sans-serif';
+                classCtx.textAlign = 'center';
+                classCtx.fillText('학생별 실험 결과를 입력하면 우리 반 누적 상대도수 변화가 그려집니다.', padLeft + plotW / 2, padTop + plotH / 2 - 14);
+            }
+        }
+
+        // 우리 반 실제 실험 데이터를 화면 2(상대도수 수렴값 찾기)로 전송
+        function sendClassDataToScreen2() {
+            if (classRecords.length === 0) {
+                playLandSound(false);
+                return;
+            }
+            stopInfiniteLoop();
+            totalTosses = 0;
+            headsCount = 0;
+            historyData = [];
+            recordedMilestones = {};
+
+            classRecords.forEach(r => {
+                totalTosses += r.tosses;
+                headsCount += r.heads;
+                historyData.push({ n: totalTosses, relFreq: headsCount / totalTosses });
+            });
+
+            updateAllStatsUI();
+            setViewMode('screen2');
+            playMilestoneChime();
+        }
+
+        // ==========================================
+        // 9. 모달 및 창 크기 변경 이벤트
+        // ==========================================
+        // 8. [화면 3] 우리 반 모둠별 합산 집계 로직
+        // ==========================================
+        function syncClassNameFromSelect() {
+            const selectEl = document.getElementById('classSelectPreset');
+            const customInput = document.getElementById('classNameCustomInput');
+            if (selectEl.value === 'custom') {
+                customInput.classList.remove('hidden');
+                customInput.focus();
+            } else {
+                customInput.classList.add('hidden');
+                customInput.value = selectEl.value;
+            }
+            updateClassTitleDisplay();
+        }
+
+        function updateClassTitleDisplay() {
+            const className = document.getElementById('classNameCustomInput').value.trim() || '우리 반';
+            document.getElementById('screen3HeaderTitle').textContent = `${className} 실제 동전 던지기 모둠별 실험 집계`;
+        }
+
+        function changeGroupCount(delta) {
+            const newCount = groupDataList.length + delta;
+            if (newCount < 4 || newCount > 10) return;
+
+            if (delta > 0) {
+                const defaultTosses = groupDataList.length > 0 ? groupDataList[groupDataList.length - 1].tosses : 100;
+                groupDataList.push({
+                    groupNum: newCount,
+                    tosses: defaultTosses,
+                    heads: ''
+                });
+            } else {
+                groupDataList.pop();
+            }
+
+            document.getElementById('groupCountDisplay').textContent = groupDataList.length;
+            renderGroupTable();
+        }
+
+        function applyBulkTosses(tossesVal) {
+            groupDataList.forEach(g => {
+                g.tosses = tossesVal;
+                if (g.heads !== '' && Number(g.heads) > tossesVal) {
+                    g.heads = tossesVal;
+                }
+            });
+            playLandSound(true);
+            renderGroupTable();
+        }
+
+        function renderGroupTable() {
+            const tbody = document.getElementById('groupTableBody');
+            let html = '';
+
+            groupDataList.forEach((g, idx) => {
+                html += `
+                    <tr id="group-row-${idx}" class="hover:bg-indigo-50/40 transition">
+                        <td class="py-2.5 px-2.5 border-r border-slate-200 font-extrabold text-slate-800 whitespace-nowrap">${g.groupNum}모둠</td>
+                        <td class="py-2 px-2 border-r border-slate-200 bg-indigo-50/30">
+                            <input type="number" min="1" max="2000" value="${g.tosses}"
+                                onchange="handleGroupInputChange(${idx}, 'tosses', this.value)"
+                                class="w-20 sm:w-24 px-2 py-1.5 text-center font-extrabold text-indigo-950 bg-white border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                        </td>
+                        <td class="py-2 px-2 border-r border-slate-200 bg-amber-50/40">
+                            <input id="group-heads-input-${idx}" type="number" min="0" max="${g.tosses}" value="${g.heads}" placeholder="입력"
+                                oninput="handleGroupInputChange(${idx}, 'heads', this.value)"
+                                onkeydown="handleGroupInputKeydown(event, ${idx})"
+                                class="w-20 sm:w-24 px-2 py-1.5 text-center font-black text-amber-900 bg-white border-2 border-amber-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        </td>
+                        <td id="group-rel-${idx}" class="py-2.5 px-2.5 border-r border-slate-200 font-bold text-slate-400">-</td>
+                        <td id="group-cum-tosses-${idx}" class="py-2.5 px-2.5 border-r border-slate-200 bg-emerald-50/20 font-semibold text-slate-400">-</td>
+                        <td id="group-cum-heads-${idx}" class="py-2.5 px-2.5 border-r border-slate-200 bg-emerald-50/20 font-semibold text-slate-400">-</td>
+                        <td id="group-cum-rel-${idx}" onclick="revealSingleCell(this)" class="py-2.5 px-2.5 bg-emerald-50/50 font-black text-slate-400">-</td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+            recalculateGroupAggregation();
+        }
+
+        function handleGroupInputKeydown(event, idx) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                const nextInput = document.getElementById(`group-heads-input-${idx + 1}`);
+                if (nextInput) {
+                    nextInput.focus();
+                    nextInput.select();
+                } else {
+                    event.target.blur();
+                }
+            }
+        }
+
+        function handleGroupInputChange(idx, field, rawVal) {
+            const g = groupDataList[idx];
+            if (!g) return;
+
+            if (field === 'tosses') {
+                const parsedTosses = Math.max(1, parseInt(rawVal, 10) || 100);
+                g.tosses = parsedTosses;
+                const headsInput = document.getElementById(`group-heads-input-${idx}`);
+                if (headsInput) headsInput.max = parsedTosses;
+                if (g.heads !== '' && Number(g.heads) > parsedTosses) {
+                    g.heads = parsedTosses;
+                    if (headsInput) headsInput.value = parsedTosses;
+                }
+            } else if (field === 'heads') {
+                if (rawVal === '' || rawVal === null) {
+                    g.heads = '';
+                } else {
+                    let parsedHeads = parseInt(rawVal, 10);
+                    if (isNaN(parsedHeads) || parsedHeads < 0) parsedHeads = 0;
+                    if (parsedHeads > g.tosses) {
+                        parsedHeads = g.tosses;
+                        const headsInput = document.getElementById(`group-heads-input-${idx}`);
+                        if (headsInput) headsInput.value = parsedHeads;
+                    }
+                    g.heads = parsedHeads;
+                }
+            }
+
+            recalculateGroupAggregation();
+        }
+
+        function recalculateGroupAggregation() {
+            let cumTosses = 0;
+            let cumHeads = 0;
+            let enteredCount = 0;
+
+            groupDataList.forEach((g, idx) => {
+                const relEl = document.getElementById(`group-rel-${idx}`);
+                const cumTEl = document.getElementById(`group-cum-tosses-${idx}`);
+                const cumHEl = document.getElementById(`group-cum-heads-${idx}`);
+                const cumRelEl = document.getElementById(`group-cum-rel-${idx}`);
+                const rowEl = document.getElementById(`group-row-${idx}`);
+
+                const hasValidInput = g.heads !== '' && !isNaN(Number(g.heads));
+
+                if (hasValidInput) {
+                    const h = Number(g.heads);
+                    const t = Number(g.tosses);
+                    enteredCount++;
+                    cumTosses += t;
+                    cumHeads += h;
+
+                    const groupRel = (h / t).toFixed(3);
+                    const cumRel = (cumHeads / cumTosses).toFixed(3);
+
+                    if (rowEl) rowEl.classList.add('bg-emerald-50/25');
+                    if (relEl) {
+                        relEl.textContent = groupRel;
+                        relEl.className = 'py-2.5 px-2.5 border-r border-slate-200 font-extrabold text-amber-800';
+                    }
+                    if (cumTEl) {
+                        cumTEl.textContent = cumTosses.toLocaleString();
+                        cumTEl.className = 'py-2.5 px-2.5 border-r border-slate-200 bg-emerald-50/30 font-bold text-slate-800';
+                    }
+                    if (cumHEl) {
+                        cumHEl.textContent = cumHeads.toLocaleString();
+                        cumHEl.className = 'py-2.5 px-2.5 border-r border-slate-200 bg-emerald-50/30 font-bold text-slate-800';
+                    }
+                    if (cumRelEl) {
+                        cumRelEl.textContent = cumRel;
+                        cumRelEl.className = 'py-2.5 px-2.5 bg-emerald-100/70 font-black text-emerald-800' + (isClassTableMasked ? ' cell-masked' : '');
+                    }
+                } else {
+                    if (rowEl) rowEl.classList.remove('bg-emerald-50/25');
+                    if (relEl) {
+                        relEl.textContent = '-';
+                        relEl.className = 'py-2.5 px-2.5 border-r border-slate-200 font-bold text-slate-400';
+                    }
+                    if (cumTEl) {
+                        cumTEl.textContent = '-';
+                        cumTEl.className = 'py-2.5 px-2.5 border-r border-slate-200 bg-emerald-50/20 font-semibold text-slate-400';
+                    }
+                    if (cumHEl) {
+                        cumHEl.textContent = '-';
+                        cumHEl.className = 'py-2.5 px-2.5 border-r border-slate-200 bg-emerald-50/20 font-semibold text-slate-400';
+                    }
+                    if (cumRelEl) {
+                        cumRelEl.textContent = '-';
+                        cumRelEl.className = 'py-2.5 px-2.5 bg-emerald-50/50 font-black text-slate-400';
+                    }
+                }
+            });
+
+            // 하단 합계 행 & 우측 상단 요약 배너 업데이트
+            const finalRel = cumTosses > 0 ? (cumHeads / cumTosses) : 0;
+            const diff = Math.abs(finalRel - 0.5);
+
+            document.getElementById('groupFooterTotalTosses').textContent = `${cumTosses.toLocaleString()}회`;
+            document.getElementById('groupFooterTotalHeads').textContent = `${cumHeads.toLocaleString()}회`;
+            document.getElementById('groupFooterCumTosses').textContent = `${cumTosses.toLocaleString()}회`;
+            document.getElementById('groupFooterCumHeads').textContent = `${cumHeads.toLocaleString()}회`;
+
+            const footerFinalEl = document.getElementById('groupFooterFinalRelFreq');
+            footerFinalEl.textContent = cumTosses > 0 ? finalRel.toFixed(3) : '0.000';
+            if (isClassTableMasked && cumTosses > 0) footerFinalEl.classList.add('cell-masked');
+            else footerFinalEl.classList.remove('cell-masked');
+
+            document.getElementById('summaryEnteredGroups').textContent = `${enteredCount} / ${groupDataList.length}`;
+            document.getElementById('summaryFinalRelFreq').textContent = cumTosses > 0 ? finalRel.toFixed(3) : '0.000';
+            document.getElementById('summaryTotalRatio').textContent = `(${cumHeads.toLocaleString()} / ${cumTosses.toLocaleString()})`;
+            document.getElementById('summaryMathDiff').textContent = cumTosses > 0 ? diff.toFixed(4) : '-';
+
+            drawClassChart();
+        }
+
+        function fillSampleGroupData() {
+            // 모둠별 100회씩 던진 현실적인 실험 결과 예시 (0.5 주변 자연스러운 변동)
+            const realisticSamples = [46, 54, 48, 52, 47, 51, 50, 49, 53, 48];
+            groupDataList.forEach((g, idx) => {
+                const ratio = realisticSamples[idx % realisticSamples.length] / 100;
+                g.heads = Math.round(g.tosses * ratio);
+            });
+            playMilestoneChime();
+            renderGroupTable();
+        }
+
+        function resetGroupData() {
+            groupDataList.forEach(g => {
+                g.heads = '';
+            });
+            renderGroupTable();
+        }
+
+        function toggleClassTableMask() {
+            isClassTableMasked = !isClassTableMasked;
+            const btnText = document.getElementById('classMaskBtnText');
+            const icon = document.getElementById('classMaskIcon');
+
+            if (isClassTableMasked) {
+                btnText.textContent = '누적 상대도수 모두 공개';
+                icon.className = 'fa-solid fa-eye';
+            } else {
+                btnText.textContent = '누적 상대도수 가리기';
+                icon.className = 'fa-solid fa-eye-slash';
+            }
+            recalculateGroupAggregation();
+        }
+
+        function setClassChartScale(mode) {
+            classChartScaleMode = mode;
+            const btnT = document.getElementById('btnClassScaleTextbook');
+            const btnF = document.getElementById('btnClassScaleFull');
+
+            if (mode === 'textbook') {
+                btnT.className = 'px-2 py-1 rounded-lg text-[11px] font-bold bg-indigo-600 text-white shadow-2xs transition';
+                btnF.className = 'px-2 py-1 rounded-lg text-[11px] font-bold text-slate-600 hover:text-slate-900 transition';
+            } else {
+                btnF.className = 'px-2 py-1 rounded-lg text-[11px] font-bold bg-indigo-600 text-white shadow-2xs transition';
+                btnT.className = 'px-2 py-1 rounded-lg text-[11px] font-bold text-slate-600 hover:text-slate-900 transition';
+            }
+            drawClassChart();
+        }
+
+        function resizeClassCanvas() {
+            const container = document.getElementById('classChartContainer');
+            if (!container || container.offsetParent === null) return;
+
+            const dpr = window.devicePixelRatio || 1;
+            const rect = container.getBoundingClientRect();
+
+            classCanvas.width = rect.width * dpr;
+            classCanvas.height = rect.height * dpr;
+            classCtx.setTransform(1, 0, 0, 1, 0, 0);
+            classCtx.scale(dpr, dpr);
+            drawClassChart();
+        }
+
+        function drawClassChart() {
+            const container = document.getElementById('classChartContainer');
+            if (!container || container.offsetParent === null) return;
+
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            classCtx.clearRect(0, 0, width, height);
+
+            const padLeft = 52;
+            const padRight = 24;
+            const padTop = 22;
+            const padBottom = 42;
+
+            const plotW = width - padLeft - padRight;
+            const plotH = height - padTop - padBottom;
+            if (plotW <= 0 || plotH <= 0) return;
+
+            // 입력된 모둠만 추출하여 누적 데이터 포인트 생성
+            let cumT = 0;
+            let cumH = 0;
+            const points = [];
+            groupDataList.forEach(g => {
+                if (g.heads !== '' && !isNaN(Number(g.heads))) {
+                    const t = Number(g.tosses);
+                    const h = Number(g.heads);
+                    cumT += t;
+                    cumH += h;
+                    points.push({
+                        groupNum: g.groupNum,
+                        groupRelFreq: h / t,
+                        cumTosses: cumT,
+                        cumRelFreq: cumH / cumT
+                    });
+                }
+            });
+
+            const yMin = classChartScaleMode === 'textbook' ? 0.35 : 0.0;
+            const yMax = classChartScaleMode === 'textbook' ? 0.65 : 1.0;
+
+            const maxConfiguredTosses = groupDataList.reduce((acc, g) => acc + Number(g.tosses || 0), 0);
+            const xMax = Math.max(maxConfiguredTosses, cumT, 500);
+
+            const getX = (n) => padLeft + (n / xMax) * plotW;
+            const getY = (val) => {
+                const clamped = Math.max(yMin, Math.min(yMax, val));
+                return padTop + plotH - ((clamped - yMin) / (yMax - yMin)) * plotH;
+            };
+
+            // 1. 가로 눈금선
+            classCtx.lineWidth = 1;
+            classCtx.font = '600 11px Inter, Noto Sans KR, sans-serif';
+            classCtx.textAlign = 'right';
+            classCtx.textBaseline = 'middle';
+
+            const yTicks = classChartScaleMode === 'textbook'
+                ? [0.40, 0.45, 0.50, 0.55, 0.60, 0.65]
+                : [0.00, 0.25, 0.50, 0.75, 1.00];
+
+            yTicks.forEach(tick => {
+                const y = getY(tick);
+                classCtx.beginPath();
+                classCtx.strokeStyle = '#e2e8f0';
+                classCtx.moveTo(padLeft, y);
+                classCtx.lineTo(padLeft + plotW, y);
+                classCtx.stroke();
+
+                classCtx.fillStyle = tick === 0.5 ? '#e11d48' : '#475569';
+                classCtx.fillText(tick.toFixed(2), padLeft - 8, y);
+            });
+
+            if (classChartScaleMode === 'textbook') {
+                classCtx.fillStyle = '#475569';
+                classCtx.fillText('0', padLeft - 8, padTop + plotH);
+
+                const waveY = padTop + plotH - 12;
+                classCtx.save();
+                classCtx.fillStyle = '#ffffff';
+                classCtx.fillRect(padLeft - 4, waveY - 4, plotW + 8, 8);
+                classCtx.strokeStyle = '#64748b';
+                classCtx.lineWidth = 1.5;
+                [-2.5, 2.5].forEach(offset => {
+                    classCtx.beginPath();
+                    for (let x = padLeft - 4; x <= padLeft + plotW + 4; x += 6) {
+                        const y = waveY + offset + Math.sin((x - padLeft) * 0.25) * 2.2;
+                        if (x === padLeft - 4) classCtx.moveTo(x, y);
+                        else classCtx.lineTo(x, y);
+                    }
+                    classCtx.stroke();
+                });
+                classCtx.restore();
+            }
+
+            // 2. 세로 눈금선
+            classCtx.textAlign = 'center';
+            classCtx.textBaseline = 'top';
+            const xSteps = 5;
+            for (let i = 1; i <= xSteps; i++) {
+                const val = Math.round((xMax / xSteps) * i);
+                const x = getX(val);
+                classCtx.beginPath();
+                classCtx.strokeStyle = '#e2e8f0';
+                classCtx.moveTo(x, padTop);
+                classCtx.lineTo(x, padTop + plotH);
+                classCtx.stroke();
+
+                classCtx.fillStyle = '#475569';
+                classCtx.fillText(`${val}회`, x, padTop + plotH + 8);
+            }
+
+            // 축 제목 및 테두리
+            classCtx.fillStyle = '#1e293b';
+            classCtx.font = '700 11px Noto Sans KR, sans-serif';
+            classCtx.fillText('모둠 누적 던진 횟수 (회)', padLeft + plotW / 2, height - 13);
+
+            classCtx.strokeStyle = '#64748b';
+            classCtx.lineWidth = 1.5;
+            classCtx.beginPath();
+            classCtx.moveTo(padLeft, padTop);
+            classCtx.lineTo(padLeft, padTop + plotH);
+            classCtx.lineTo(padLeft + plotW, padTop + plotH);
+            classCtx.stroke();
+
+            // 3. 수학적 확률(0.50) 빨간 점선
+            const yHalf = getY(0.5);
+            classCtx.save();
+            classCtx.beginPath();
+            classCtx.setLineDash([6, 4]);
+            classCtx.strokeStyle = '#e11d48';
+            classCtx.lineWidth = 2;
+            classCtx.moveTo(padLeft, yHalf);
+            classCtx.lineTo(padLeft + plotW, yHalf);
+            classCtx.stroke();
+            classCtx.restore();
+
+            classCtx.fillStyle = '#e11d48';
+            classCtx.font = '700 11px Noto Sans KR, sans-serif';
+            classCtx.textAlign = 'right';
+            classCtx.fillText('수학적 확률 (0.50)', padLeft + plotW - 6, yHalf - 13);
+
+            // 4. 데이터 렌더링 (시리즈 A: 모둠별 개별 상대도수 점 + 시리즈 B: 우리 반 누적 상대도수 꺾은선)
+            if (points.length > 0) {
+                // 시리즈 A: 모둠별 개별 상대도수 (주황색 점 + 수직 연결 점선)
+                points.forEach(pt => {
+                    const px = getX(pt.cumTosses);
+                    const gy = getY(pt.groupRelFreq);
+                    const cy = getY(pt.cumRelFreq);
+
+                    classCtx.save();
+                    classCtx.beginPath();
+                    classCtx.setLineDash([2, 2]);
+                    classCtx.strokeStyle = 'rgba(245, 158, 11, 0.55)';
+                    classCtx.lineWidth = 1.2;
+                    classCtx.moveTo(px, gy);
+                    classCtx.lineTo(px, cy);
+                    classCtx.stroke();
+                    classCtx.restore();
+
+                    classCtx.beginPath();
+                    classCtx.fillStyle = '#f59e0b';
+                    classCtx.strokeStyle = '#b45309';
+                    classCtx.lineWidth = 1.5;
+                    classCtx.arc(px, gy, 4.5, 0, Math.PI * 2);
+                    classCtx.fill();
+                    classCtx.stroke();
+
+                    classCtx.fillStyle = '#92400e';
+                    classCtx.font = '700 10px Noto Sans KR, sans-serif';
+                    classCtx.textAlign = 'center';
+                    classCtx.fillText(`${pt.groupNum}모둠`, px, gy + (pt.groupRelFreq >= 0.5 ? -13 : 12));
+                });
+
+                // 시리즈 B: 우리 반 누적 상대도수 꺾은선 (초록색 실선)
+                classCtx.beginPath();
+                classCtx.strokeStyle = '#059669';
+                classCtx.lineWidth = 3;
+                classCtx.lineJoin = 'round';
+
+                points.forEach((pt, idx) => {
+                    const px = getX(pt.cumTosses);
+                    const py = getY(pt.cumRelFreq);
+                    if (idx === 0) classCtx.moveTo(px, py);
+                    else classCtx.lineTo(px, py);
+                });
+                classCtx.stroke();
+
+                points.forEach((pt, idx) => {
+                    const px = getX(pt.cumTosses);
+                    const py = getY(pt.cumRelFreq);
+                    const isLast = idx === points.length - 1;
+
+                    classCtx.beginPath();
+                    classCtx.fillStyle = '#059669';
+                    classCtx.arc(px, py, isLast ? 6 : 4, 0, Math.PI * 2);
+                    classCtx.fill();
+
+                    if (isLast) {
+                        classCtx.beginPath();
+                        classCtx.fillStyle = 'rgba(5, 150, 105, 0.25)';
+                        classCtx.arc(px, py, 11, 0, Math.PI * 2);
+                        classCtx.fill();
+
+                        classCtx.fillStyle = '#065f46';
+                        classCtx.font = '800 11px Inter, sans-serif';
+                        classCtx.textAlign = px > padLeft + plotW - 65 ? 'right' : 'left';
+                        const offsetX = px > padLeft + plotW - 65 ? -10 : 10;
+                        classCtx.fillText(`누적 ${pt.cumRelFreq.toFixed(3)}`, px + offsetX, py - 10);
+                    }
+                });
+            } else {
+                classCtx.fillStyle = '#94a3b8';
+                classCtx.font = '600 12px Noto Sans KR, sans-serif';
+                classCtx.textAlign = 'center';
+                classCtx.fillText('왼쪽 표에 모둠별 앞면 나온 횟수를 입력하면 수렴 그래프가 그려집니다.', padLeft + plotW / 2, padTop + plotH / 2 - 14);
+            }
+        }
+
+        // 우리 반 모둠별 누적 데이터를 화면 2(상대도수 수렴값 찾기)로 전송
+        function sendClassDataToScreen2() {
+            const validGroups = groupDataList.filter(g => g.heads !== '' && !isNaN(Number(g.heads)));
+            if (validGroups.length === 0) {
+                playLandSound(false);
+                return;
+            }
+
+            stopInfiniteLoop();
+            totalTosses = 0;
+            headsCount = 0;
+            historyData = [];
+            recordedMilestones = {};
+
+            validGroups.forEach(g => {
+                totalTosses += Number(g.tosses);
+                headsCount += Number(g.heads);
+                historyData.push({ n: totalTosses, relFreq: headsCount / totalTosses });
+            });
+
+            updateAllStatsUI();
+            setViewMode('screen2');
+            playMilestoneChime();
+        }
+
+        // ==========================================
+        // 9. 모달 및 창 크기 변경 이벤트
+        // ==========================================
+        function openTeacherModal() {
+            const modal = document.getElementById('teacherModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeTeacherModal() {
+            const modal = document.getElementById('teacherModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            resizeClassCanvas();
+        });
+        window.onload = function() {
+            renderGroupTable();
+            resizeCanvas();
+            resizeClassCanvas();
+        };
+    </script>
+</body>
+</html>
